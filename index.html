@@ -272,6 +272,7 @@ async function fbSave(){
     await setDoc(doc(fbdb,'siteContent','text'),S.content);
     await setDoc(doc(fbdb,'siteContent','media'),{images:S.images,videos:S.videos});
     await setDoc(doc(fbdb,'siteContent','clients'),{list:S.clients});
+    await setDoc(doc(fbdb,'siteContent','settings'),{boardOpt:{news:{showDate:S.boardOpt.news.showDate,showViews:S.boardOpt.news.showViews},dl:{showDate:S.boardOpt.dl.showDate,showViews:S.boardOpt.dl.showViews}}});
     toast('🔥 Firebase 저장 완료');
   }catch(e){toast('저장 실패: '+e.message);console.error(e)}
 }
@@ -301,6 +302,8 @@ async function fbLoad(){
     if(mediaDoc.exists()){const md=mediaDoc.data();if(md.images)Object.assign(S.images,md.images);if(md.videos)Object.assign(S.videos,md.videos)}
     const clientDoc=await getDoc(doc(fbdb,'siteContent','clients'));
     if(clientDoc.exists()&&clientDoc.data().list)S.clients=clientDoc.data().list;
+    const settDoc=await getDoc(doc(fbdb,'siteContent','settings'));
+    if(settDoc.exists()){const sd=settDoc.data();if(sd.boardOpt){if(sd.boardOpt.news){S.boardOpt.news.showDate=sd.boardOpt.news.showDate??true;S.boardOpt.news.showViews=sd.boardOpt.news.showViews??true}if(sd.boardOpt.dl){S.boardOpt.dl.showDate=sd.boardOpt.dl.showDate??true;S.boardOpt.dl.showViews=sd.boardOpt.dl.showViews??true}}}
     const newsSnap=await getDocs(query(collection(fbdb,'news'),orderBy('createdAt','desc')));
     if(!newsSnap.empty)S.news=newsSnap.docs.map(d=>{const x=d.data();return{id:d.id,cat:x.category||'',title:x.title||'',content:x.content||'',date:x.createdAt&&x.createdAt.toDate?x.createdAt.toDate().toISOString().split('T')[0].replace(/-/g,'.'):(''),author:x.author||'관리자',views:x.views||0,isNew:x.isNew||false,_ts:x.createdAt}});
     const inqSnap=await getDocs(query(collection(fbdb,'inquiries'),orderBy('createdAt','desc')));
@@ -378,6 +381,7 @@ news:[{id:'n1',cat:'공지사항',title:'2026년 상반기 신제품 라인업 �
 downloads:[{id:'d1',cat:'카탈로그',title:'2026 종합 카탈로그',date:'2026.03.01',views:340,file:'카탈로그_2026.pdf',fileData:null},{id:'d2',cat:'데이터시트',title:'MC-200 데이터시트',date:'2026.02.15',views:178,file:'MC-200.pdf',fileData:null}],
 weekly:['월','화','수','목','금','토','일'].map(d=>({d,v:~~(Math.random()*180+20),p:~~(Math.random()*450+50)})),
 inquiries:[{id:1,nm:'김영호',co:'(주)대한전자',msg:'냉장고 제어기판 견적 문의',date:'2026-03-30',st:'new'},{id:2,nm:'이수진',co:'메디텍',msg:'의료기기 MCU 보드 샘플 요청',date:'2026-03-28',st:'replied'},{id:3,nm:'박준성',co:'솔라파워',msg:'태양광 인버터 제어기 기술 상담',date:'2026-03-27',st:'new'}],
+changeLog:[],
 boardOpt:{news:{showDate:true,showViews:true,filter:'전체',search:'',openId:null},dl:{showDate:true,showViews:true,filter:'전체',search:'',openId:null}},
 };
 
@@ -413,7 +417,7 @@ function EI(id,cls=''){const s=S.images[id]||'';if(!S.edit)return `<img src="${s
 function EV(id){const s=S.videos[id]||'';if(!S.edit)return `<video src="${s}" autoplay loop muted playsinline></video>`;return `<div class="edv" onclick="event.stopPropagation();sVidUp('${id}')"><video src="${s}" autoplay loop muted playsinline></video></div>`}
 function sEd(id){if(!S.edit)return;const el=document.querySelector(`[data-f="${id}"]`);if(!el)return;const v=S.content[id]||'';const rows=Math.max(1,Math.min(6,(v.match(/\n/g)||[]).length+1));el.innerHTML=`<textarea class="edin" rows="${rows}" onblur="fEd('${id}',this)" onkeydown="edKey(event,'${id}',this)">${v}</textarea>`;const ta=el.querySelector('.edin');ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length)}
 function edKey(e,id,el){if(e.key==='Enter'&&!e.shiftKey&&!e.metaKey&&!e.ctrlKey){e.preventDefault();fEd(id,el)}else if(e.key==='Enter'&&(e.shiftKey||e.metaKey||e.ctrlKey)){const s=el.selectionStart,en=el.selectionEnd;el.value=el.value.substring(0,s)+'\n'+el.value.substring(en);el.selectionStart=el.selectionEnd=s+1;e.preventDefault();el.style.height='auto';el.style.height=el.scrollHeight+'px'}}
-function fEd(id,inp){S.content[id]=inp.value;R()}
+function fEd(id,inp){const old=S.content[id]||'';S.content[id]=inp.value;if(old!==inp.value)S.changeLog.unshift({id,old:old.substring(0,30),nw:inp.value.substring(0,30),ts:new Date().toLocaleString('ko-KR')});if(S.changeLog.length>50)S.changeLog.length=50;R()}
 function sImgUp(id){if(!S.edit)return;S.upTgt={t:'img',id};$('#imgUp').click()}
 function sVidUp(id){if(!S.edit)return;const u=prompt('동영상 URL:',S.videos[id]||'');if(u!==null&&u.trim()){S.videos[id]=u.trim();R();toast('변경완료');return}S.upTgt={t:'vid',id};$('#vidUp').click()}
 $('#imgUp').addEventListener('change',function(e){const f=e.target.files[0];if(!f||!S.upTgt)return;const r=new FileReader();r.onloadend=()=>{S.images[S.upTgt.id]=r.result;S.upTgt=null;R();toast('이미지 변경')};r.readAsDataURL(f);this.value=''});
@@ -440,7 +444,79 @@ function R(){
   else if(S.view==='settings')mc.innerHTML=rSet();
 }
 
-function rDash(){const tv=S.weekly.reduce((a,x)=>a+x.v,0),tp=S.weekly.reduce((a,x)=>a+x.p,0),ni=S.inquiries.filter(i=>i.st==='new').length,mv=Math.max(...S.weekly.map(x=>x.v)),mp=Math.max(...S.weekly.map(x=>x.p));return `<div class="dg"><div class="sc"><div style="display:flex;justify-content:space-between"><span>👥</span><span class="sc-ch up">▲12%</span></div><div class="sc-v">${tv}</div><div class="sc-l">주간 방문자</div></div><div class="sc"><div style="display:flex;justify-content:space-between"><span>👁️</span><span class="sc-ch up">▲8%</span></div><div class="sc-v">${tp}</div><div class="sc-l">페이지뷰</div></div><div class="sc"><div style="display:flex;justify-content:space-between"><span>📬</span><span class="sc-ch up">+2</span></div><div class="sc-v">${ni}</div><div class="sc-l">신규 문의</div></div><div class="sc"><div style="display:flex;justify-content:space-between"><span>⏱️</span><span class="sc-ch dn">▼0.5%</span></div><div class="sc-v">3:42</div><div class="sc-l">체류시간</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="sc"><div style="font-size:10px;font-weight:700;margin-bottom:4px">주간 방문자</div><div class="bc">${S.weekly.map(w=>`<div class="bc-c"><div class="bc-b" style="height:${(w.v/mv)*100}%;background:linear-gradient(to top,rgba(56,189,248,.1),#38bdf8)"></div><div class="bc-l">${w.d}</div></div>`).join('')}</div></div><div class="sc"><div style="font-size:10px;font-weight:700;margin-bottom:4px">주간 페이지뷰</div><div class="bc">${S.weekly.map(w=>`<div class="bc-c"><div class="bc-b" style="height:${(w.p/mp)*100}%;background:linear-gradient(to top,rgba(129,140,248,.1),#818cf8)"></div><div class="bc-l">${w.d}</div></div>`).join('')}</div></div></div>`}
+function rDash(){
+  const ni=S.inquiries.filter(i=>i.st==='new').length;
+  const totalNews=S.news.length;
+  const totalFields=Object.keys(S.content).length;
+  const totalImages=Object.keys(S.images).length;
+
+  // Stats cards
+  let h=`<div class="dg">
+    <div class="sc"><div style="display:flex;justify-content:space-between"><span>📬</span></div><div class="sc-v">${ni}</div><div class="sc-l">신규 문의</div></div>
+    <div class="sc"><div style="display:flex;justify-content:space-between"><span>📰</span></div><div class="sc-v">${totalNews}</div><div class="sc-l">게시글 수</div></div>
+    <div class="sc"><div style="display:flex;justify-content:space-between"><span>📝</span></div><div class="sc-v">${totalFields}</div><div class="sc-l">콘텐츠 필드</div></div>
+    <div class="sc"><div style="display:flex;justify-content:space-between"><span>🖼️</span></div><div class="sc-v">${totalImages}</div><div class="sc-l">등록 이미지</div></div>
+  </div>`;
+
+  // Site status
+  h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">`;
+  h+=`<div class="sc"><div style="font-size:10px;font-weight:700;margin-bottom:8px">🌐 사이트 상태</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:rgba(255,255,255,.02);border-radius:6px">
+        <span style="font-size:10px;color:#aaa">홈페이지</span>
+        <span id="st-web" style="font-size:9px;padding:2px 8px;border-radius:99px;background:rgba(52,211,153,.1);color:var(--gn);font-weight:600">확인 중...</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:rgba(255,255,255,.02);border-radius:6px">
+        <span style="font-size:10px;color:#aaa">관리자</span>
+        <span style="font-size:9px;padding:2px 8px;border-radius:99px;background:rgba(52,211,153,.1);color:var(--gn);font-weight:600">● 온라인</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:rgba(255,255,255,.02);border-radius:6px">
+        <span style="font-size:10px;color:#aaa">Firestore</span>
+        <span style="font-size:9px;padding:2px 8px;border-radius:99px;background:${fbdb?'rgba(52,211,153,.1)':'rgba(248,113,113,.1)'};color:${fbdb?'var(--gn)':'var(--rd)'};font-weight:600">${fbdb?'● 연결됨':'✕ 미연결'}</span>
+      </div>
+    </div>
+  </div>`;
+
+  // Change log
+  h+=`<div class="sc"><div style="font-size:10px;font-weight:700;margin-bottom:8px">📋 콘텐츠 변경 이력</div>`;
+  if(S.changeLog.length===0){
+    h+=`<div style="text-align:center;padding:20px 0;color:#444;font-size:10px">편집 모드에서 콘텐츠를 수정하면<br/>변경 이력이 여기에 표시됩니다.</div>`;
+  }else{
+    h+=`<div style="max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:4px">`;
+    S.changeLog.slice(0,10).forEach(c=>{
+      h+=`<div style="padding:5px 8px;background:rgba(255,255,255,.02);border-radius:5px;border-left:2px solid var(--ac)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px"><code style="font-size:9px;color:var(--ac)">${c.id}</code><span style="font-size:8px;color:#555">${c.ts}</span></div>
+        <div style="font-size:9px;color:#666">${c.old?c.old+'...':''} → <span style="color:#aaa">${c.nw}...</span></div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+  h+=`</div></div>`;
+
+  // Recent inquiries
+  h+=`<div class="sc" style="margin-top:8px"><div style="font-size:10px;font-weight:700;margin-bottom:8px">📬 최근 문의</div>`;
+  if(S.inquiries.length===0){
+    h+=`<div style="text-align:center;padding:16px 0;color:#444;font-size:10px">아직 문의가 없습니다.</div>`;
+  }else{
+    S.inquiries.slice(0,5).forEach(q=>{
+      const stc={new:'var(--gn)',progress:'var(--am)',replied:'#555'};
+      const stl={new:'신규',progress:'진행중',replied:'답변완료'};
+      h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.03)">
+        <div><div style="font-size:11px;font-weight:500">${q.nm} <span style="color:#444;font-size:9px">${q.co}</span></div><div style="font-size:9px;color:#555;margin-top:1px">${q.msg}</div></div>
+        <div style="text-align:right"><span style="font-size:8px;padding:2px 6px;border-radius:99px;background:rgba(255,255,255,.03);color:${stc[q.st]||'#555'}">${stl[q.st]||q.st}</span><div style="font-size:8px;color:#444;margin-top:2px">${q.date}</div></div>
+      </div>`;
+    });
+  }
+  h+=`</div>`;
+
+  // Check website status
+  setTimeout(()=>{
+    const el=document.getElementById('st-web');
+    if(el)fetch('https://tselecv4.vercel.app',{mode:'no-cors',cache:'no-store'}).then(()=>{el.innerHTML='● 온라인';el.style.background='rgba(52,211,153,.1)';el.style.color='var(--gn)'}).catch(()=>{el.innerHTML='✕ 오프라인';el.style.background='rgba(248,113,113,.1)';el.style.color='var(--rd)'});
+  },100);
+
+  return h;
+}
 
 function rPages(){
   const pg=PAGES[S.page];if(!pg)return '';
@@ -735,10 +811,10 @@ function rBoard(type,title,items){
       <!-- Display toggles -->
       <div style="display:flex;align-items:center;gap:12px;padding:6px 14px;background:var(--sf);border:1px solid var(--bd);border-radius:8px">
         <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:#888;cursor:pointer;user-select:none">
-          <input type="checkbox" ${opt.showDate?'checked':''} onchange="S.boardOpt.${type}.showDate=this.checked;R()" style="accent-color:var(--ac);width:13px;height:13px"/> 날짜
+          <input type="checkbox" ${opt.showDate?'checked':''} onchange="S.boardOpt.${type}.showDate=this.checked;R();fbSave()" style="accent-color:var(--ac);width:13px;height:13px"/> 날짜
         </label>
         <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:#888;cursor:pointer;user-select:none">
-          <input type="checkbox" ${opt.showViews?'checked':''} onchange="S.boardOpt.${type}.showViews=this.checked;R()" style="accent-color:var(--ac);width:13px;height:13px"/> 조회수
+          <input type="checkbox" ${opt.showViews?'checked':''} onchange="S.boardOpt.${type}.showViews=this.checked;R();fbSave()" style="accent-color:var(--ac);width:13px;height:13px"/> 조회수
         </label>
       </div>
     </div>
