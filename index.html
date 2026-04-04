@@ -294,6 +294,80 @@ textarea.edin{resize:vertical;min-height:36px}
 <div class="toast" id="toast">✓ <span id="toastMsg"></span></div><div id="modalR"></div>
 
 <script>
+// === Firebase REST API (Named Database) ===
+const FB={project:'gen-lang-client-0276589179',db:'ai-studio-e97c649f-c50c-4cd5-8952-6640d34f2444',key:'AIzaSyDmgOBu3kPUGzff_CyR647kIbN4F91seJE',token:null};
+FB.base=`https://firestore.googleapis.com/v1/projects/${FB.project}/databases/${FB.db}/documents`;
+function toFv(v){if(v===null||v===undefined)return{nullValue:null};if(typeof v==='string')return{stringValue:v};if(typeof v==='number')return Number.isInteger(v)?{integerValue:String(v)}:{doubleValue:v};if(typeof v==='boolean')return{booleanValue:v};if(Array.isArray(v))return{arrayValue:{values:v.map(toFv)}};if(typeof v==='object')return{mapValue:{fields:Object.fromEntries(Object.entries(v).map(([k,val])=>[k,toFv(val)]))}};return{stringValue:String(v)}}
+function fromFv(v){if(!v)return null;if('stringValue' in v)return v.stringValue;if('integerValue' in v)return parseInt(v.integerValue);if('doubleValue' in v)return v.doubleValue;if('booleanValue' in v)return v.booleanValue;if('nullValue' in v)return null;if('arrayValue' in v)return(v.arrayValue.values||[]).map(fromFv);if('mapValue' in v)return Object.fromEntries(Object.entries(v.mapValue.fields||{}).map(([k,val])=>[k,fromFv(val)]));if('timestampValue' in v)return v.timestampValue;return null}
+function toFd(obj){return{fields:Object.fromEntries(Object.entries(obj).map(([k,v])=>[k,toFv(v)]))}}
+function fromFd(doc){if(!doc||!doc.fields)return{};const o={};Object.entries(doc.fields).forEach(([k,v])=>{o[k]=fromFv(v)});return o}
+const fh=()=>({'Content-Type':'application/json',...(FB.token?{Authorization:`Bearer ${FB.token}`}:{})});
+async function fbAuth(){try{const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB.key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{"returnSecureToken":true}'});const d=await r.json();FB.token=d.idToken;return d.idToken}catch(e){console.error('Auth error:',e);return null}}
+async function fsGet(path){try{const r=await fetch(`${FB.base}/${path}`,{headers:fh()});if(!r.ok)return null;return fromFd(await r.json())}catch(e){return null}}
+async function fsPatch(path,data){try{const r=await fetch(`${FB.base}/${path}`,{method:'PATCH',headers:fh(),body:JSON.stringify(toFd(data))});return r.ok}catch(e){return false}}
+async function fsList(col){try{const r=await fetch(`${FB.base}/${col}`,{headers:fh()});if(!r.ok)return[];const d=await r.json();return(d.documents||[]).map(doc=>{const o=fromFd(doc);o._id=doc.name.split('/').pop();o._createTime=doc.createTime||'';return o})}catch(e){return[]}}
+async function fsAdd(col,data){try{const r=await fetch(`${FB.base}/${col}`,{method:'POST',headers:fh(),body:JSON.stringify(toFd(data))});if(!r.ok)return null;const d=await r.json();return d.name.split('/').pop()}catch(e){return null}}
+async function fsDel(path){try{const r=await fetch(`${FB.base}/${path}`,{method:'DELETE',headers:fh()});return r.ok}catch(e){return false}}
+
+// Load all data from Firestore
+async function loadFromFirestore(){
+  try{
+    toast('데이터 로딩중...');
+    await fbAuth();
+    const[text,media,clients,settings,newsItems,inqItems,chatItems]=await Promise.all([
+      fsGet('siteContent/text'),fsGet('siteContent/media'),fsGet('siteContent/clients'),fsGet('siteContent/settings'),
+      fsList('news'),fsList('inquiries'),fsList('chatInquiries')
+    ]);
+    if(text)Object.entries(text).forEach(([k,v])=>{if(typeof v==='string')S.content[k]=v});
+    if(media){if(media.images&&typeof media.images==='object')Object.entries(media.images).forEach(([k,v])=>{if(v)S.images[k]=v});if(media.videos&&typeof media.videos==='object')Object.entries(media.videos).forEach(([k,v])=>{if(v)S.videos[k]=v})}
+    if(clients&&Array.isArray(clients.list))S.clients=clients.list;
+    if(settings&&settings.boardOpt){if(settings.boardOpt.news)Object.assign(S.boardOpt.news,settings.boardOpt.news);if(settings.boardOpt.dl)Object.assign(S.boardOpt.dl,settings.boardOpt.dl)}
+    if(newsItems.length)S.news=newsItems.sort((a,b)=>(b._createTime||'').localeCompare(a._createTime||'')).map(n=>({id:n._id,cat:n.category||'공지사항',title:n.title||'',date:n.createdAt?new Date(n.createdAt).toLocaleDateString('ko-KR'):n._createTime?new Date(n._createTime).toLocaleDateString('ko-KR'):'-',views:n.views||0,content:n.content||'',author:n.author||''}));
+    if(inqItems.length)S.inquiries=inqItems.sort((a,b)=>(b._createTime||'').localeCompare(a._createTime||'')).map(n=>({id:n._id,nm:n.name||'',co:n.company||'',msg:n.message||'',email:n.email||'',phone:n.phone||'',date:n.createdAt?new Date(n.createdAt).toLocaleDateString('ko-KR'):n._createTime?new Date(n._createTime).toLocaleDateString('ko-KR'):'-',st:n.status||'new'}));
+    if(chatItems.length)S.chatInquiries=chatItems.sort((a,b)=>(b._createTime||'').localeCompare(a._createTime||'')).map(n=>({id:n._id,phone:n.contact||'',cat:n.category||'',date:n.createdAt?new Date(n.createdAt).toLocaleDateString('ko-KR'):n._createTime?new Date(n._createTime).toLocaleDateString('ko-KR'):'-',msgs:(n.conversation||[]).length,st:n.status||'new',conversation:n.conversation||[],userName:n.userName||'',topic:n.topic||''}));
+    R();toast('✅ Firestore 연동 완료');
+  }catch(e){console.error('Load error:',e);R();toast('⚠️ 오프라인 모드')}
+}
+
+// Save content/media/clients to Firestore
+async function saveToFirestore(){
+  try{
+    toast('저장 중...');
+    if(!FB.token)await fbAuth();
+    const ok=await Promise.all([
+      fsPatch('siteContent/text',S.content),
+      fsPatch('siteContent/media',{images:S.images,videos:S.videos}),
+      fsPatch('siteContent/clients',{list:S.clients}),
+      fsPatch('siteContent/settings',{boardOpt:{news:{showDate:S.boardOpt.news.showDate,showViews:S.boardOpt.news.showViews},dl:{showDate:S.boardOpt.dl.showDate,showViews:S.boardOpt.dl.showViews}}})
+    ]);
+    if(ok.every(Boolean))toast('✅ 저장 완료 — 웹사이트 반영됨');else toast('⚠️ 일부 저장 실패');
+  }catch(e){console.error('Save error:',e);toast('❌ 저장 실패')}
+}
+
+// Update inquiry status in Firestore
+async function updateInqStatus(id,status){
+  if(!FB.token)await fbAuth();
+  await fsPatch('inquiries/'+id,{status:status});
+}
+
+// Update chatbot inquiry status in Firestore
+async function updateChatStatus(id,status){
+  if(!FB.token)await fbAuth();
+  await fsPatch('chatInquiries/'+id,{status:status});
+}
+
+// Add news to Firestore
+async function addNewsToFs(data){
+  if(!FB.token)await fbAuth();
+  return await fsAdd('news',{...data,createdAt:new Date().toISOString()});
+}
+
+// Delete news from Firestore
+async function delNewsFromFs(id){
+  if(!FB.token)await fbAuth();
+  return await fsDel('news/'+id);
+}
+
 const PAGES={
   home:{name:'홈 (메인)',secs:[
     {n:'히어로',f:['hero-badge','hero-t1','hero-t2','hero-sub'],i:['hero-bg']},
@@ -421,7 +495,7 @@ function R(){
   const sbLogoHtml=logoSrc?`<img src="${logoSrc}" alt="Logo" style="height:28px;object-fit:contain;cursor:pointer" onclick="sw('dashboard');location.reload()" title="홈 / 새로고침" crossorigin="anonymous"/>`:`<div class="sb-logo" onclick="sw('dashboard');location.reload()" title="홈 / 새로고침"><span>TSE</span><span>LEC</span></div>`;
   $('#sbHd').innerHTML=`${S.edit?`<div class="edi" style="display:inline-flex;align-items:center" onclick="event.stopPropagation();sImgUp('logo-img')">${sbLogoHtml}</div>`:sbLogoHtml}<span style="font-size:8px;color:var(--ac);font-weight:700;margin-left:auto">ADMIN</span>`;
   let nav='';NAV.forEach(n=>{const b=n.bg?n.bg():0;nav+=`<button class="nb ${S.view===n.id?'on':''}" onclick="sw('${n.id}')">${n.lb}${b?`<span class="bdg">${b}</span>`:''}</button>`});$('#sbNav').innerHTML=nav;
-  let bot='';if(S.view==='pages')bot+=`<button class="etb ${S.edit?'on':''}" onclick="te()">${S.edit?'👁️ 미리보기':'✏️ 편집 모드'}</button>`;bot+=`<button class="svb" onclick="toast('저장 완료')">💾 저장</button>`;$('#sbBot').innerHTML=bot;
+  let bot='';if(S.view==='pages')bot+=`<button class="etb ${S.edit?'on':''}" onclick="te()">${S.edit?'👁️ 미리보기':'✏️ 편집 모드'}</button>`;bot+=`<button class="svb" onclick="saveToFirestore()">💾 저장</button>`;$('#sbBot').innerHTML=bot;
   const tt={dashboard:'대시보드',pages:'페이지 편집',inquiries:'문의 관리',chatbot:'챗봇 문의','news-b':'공지사항','dl-b':'자료실',settings:'설정'};$('#tbT').textContent=tt[S.view]||'';$('#eiTag').style.display=S.edit?'':'none';
   const mc=$('#mc');
   if(S.view==='dashboard')mc.innerHTML=rDash();
@@ -846,8 +920,8 @@ function rInq(){
           <label style="display:block;font-size:10px;color:var(--tx3);font-weight:600;margin-bottom:6px">답변 입력</label>
           <textarea style="width:100%;padding:10px;background:var(--inp-bg);border:1px solid var(--bd);border-radius:7px;color:var(--tx);font-family:inherit;font-size:11px;resize:vertical;height:80px" placeholder="고객 문의에 대한 답변을 입력하세요..." onchange="S.inqOpt.replyText=${openItem.id}=this.value;R()">${opt.replyText[openItem.id]||''}</textarea>
           <div style="display:flex;gap:6px;margin-top:10px">
-            <button onclick="S.inquiries[S.inquiries.indexOf(openItem)].st='pending';S.inqOpt.replyStatus[${openItem.id}]='pending';toast('상태: 진행중');R()" style="flex:1;padding:8px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.15);border-radius:7px;color:var(--am);font-size:10px;font-weight:600;font-family:inherit">진행중</button>
-            <button onclick="S.inquiries[S.inquiries.indexOf(openItem)].st='replied';S.inqOpt.replyStatus[${openItem.id}]='replied';toast('상태: 답변완료');R()" style="flex:1;padding:8px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.15);border-radius:7px;color:var(--gn);font-size:10px;font-weight:600;font-family:inherit">답변 완료</button>
+            <button onclick="S.inquiries[S.inquiries.indexOf(openItem)].st='pending';updateInqStatus('${openItem.id}','pending');toast('상태: 진행중');R()" style="flex:1;padding:8px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.15);border-radius:7px;color:var(--am);font-size:10px;font-weight:600;font-family:inherit">진행중</button>
+            <button onclick="S.inquiries[S.inquiries.indexOf(openItem)].st='replied';updateInqStatus('${openItem.id}','replied');toast('상태: 답변완료');R()" style="flex:1;padding:8px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.15);border-radius:7px;color:var(--gn);font-size:10px;font-weight:600;font-family:inherit">답변 완료</button>
           </div>
         </div>
       </div>
@@ -889,13 +963,12 @@ function rChat(){
         <div style="padding:24px 28px;background:var(--dim-bg);min-height:150px;max-height:300px;overflow-y:auto;border-bottom:1px solid var(--bd)">
           <div style="font-size:10px;color:var(--tx3);margin-bottom:12px;font-weight:600">대화 내역</div>
           <div style="display:flex;flex-direction:column;gap:8px">
-            <div style="background:rgba(56,189,248,.1);padding:10px;border-radius:7px;border-left:2px solid var(--ac)"><div style="font-size:9px;color:var(--ac);font-weight:600;margin-bottom:3px">사용자</div><div style="font-size:11px;color:var(--tx2)">냉장고 제어기판 기술 문의</div></div>
-            <div style="background:rgba(52,211,153,.1);padding:10px;border-radius:7px;border-left:2px solid var(--gn);margin-left:auto;max-width:80%"><div style="font-size:9px;color:var(--gn);font-weight:600;margin-bottom:3px">상담원</div><div style="font-size:11px;color:var(--tx2)">상담원 응답...</div></div>
+            ${(openItem.conversation||[]).length?openItem.conversation.map(m=>`<div style="background:${m.role==='user'?'rgba(56,189,248,.1)':'rgba(52,211,153,.1)'};padding:10px;border-radius:7px;border-left:2px solid ${m.role==='user'?'var(--ac)':'var(--gn)'};${m.role!=='user'?'margin-left:auto;max-width:80%':''}"><div style="font-size:9px;color:${m.role==='user'?'var(--ac)':'var(--gn)'};font-weight:600;margin-bottom:3px">${m.role==='user'?'사용자':'챗봇'}</div><div style="font-size:11px;color:var(--tx2)">${(m.text||'').replace(/</g,'&lt;')}</div></div>`).join(''):`<div style="font-size:11px;color:var(--tx4)">대화 내역이 없습니다</div>`}
           </div>
         </div>
         <div style="padding:24px 28px;border-top:1px solid var(--bd)">
           <div style="display:flex;gap:6px">
-            <button onclick="S.chatInquiries[S.chatInquiries.indexOf(openItem)].st='replied';S.chatOpt.openId=null;toast('응답완료 처리됨');R()" style="flex:1;padding:10px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.15);border-radius:7px;color:var(--gn);font-size:11px;font-weight:600;font-family:inherit">✓ 응답완료</button>
+            <button onclick="S.chatInquiries[S.chatInquiries.indexOf(openItem)].st='replied';updateChatStatus('${openItem.id}','replied');S.chatOpt.openId=null;toast('응답완료 처리됨');R()" style="flex:1;padding:10px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.15);border-radius:7px;color:var(--gn);font-size:11px;font-weight:600;font-family:inherit">✓ 응답완료</button>
           </div>
         </div>
       </div>
@@ -922,7 +995,7 @@ function exJ(){const d=JSON.stringify({content:S.content,images:S.images,videos:
 
 // Load saved theme
 try{const st=localStorage.getItem('tselec-theme');if(st){S.theme=st;if(st==='light')document.body.classList.add('light')}}catch(e){}
-R();
+R();loadFromFirestore();
 document.addEventListener('click',e=>{const a=e.target.closest('a');if(a){const h=a.getAttribute('href');if(h&&!h.startsWith('javascript:')&&!h.startsWith('blob:')&&!h.startsWith('data:'))e.preventDefault()}},true);
 </script>
 </body>
