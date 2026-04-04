@@ -308,6 +308,11 @@ async function fbLoad(){
     if(!newsSnap.empty)S.news=newsSnap.docs.map(d=>{const x=d.data();return{id:d.id,cat:x.category||'',title:x.title||'',content:x.content||'',date:x.createdAt&&x.createdAt.toDate?x.createdAt.toDate().toISOString().split('T')[0].replace(/-/g,'.'):(''),author:x.author||'관리자',views:x.views||0,isNew:x.isNew||false,_ts:x.createdAt}});
     const inqSnap=await getDocs(query(collection(fbdb,'inquiries'),orderBy('createdAt','desc')));
     if(!inqSnap.empty)S.inquiries=inqSnap.docs.map(d=>{const x=d.data();return{id:d.id,nm:x.name||x.nm||'',co:x.company||x.co||'',msg:x.message||x.msg||'',date:x.createdAt&&x.createdAt.toDate?x.createdAt.toDate().toISOString().split('T')[0]:'',st:x.status==='pending'?'new':(x.status||x.st||'new')}});
+    // 챗봇 문의 로드
+    try{
+      const chatSnap=await getDocs(query(collection(fbdb,'chatInquiries'),orderBy('createdAt','desc')));
+      if(!chatSnap.empty)S.chatInquiries=chatSnap.docs.map(d=>{const x=d.data();return{id:d.id,contact:x.contact||'',contactType:x.contactType||'phone',topic:x.topic||'',category:x.category||'',userName:x.userName||'',status:x.status||'new',conversation:x.conversation||[],date:x.createdAt&&x.createdAt.toDate?x.createdAt.toDate().toISOString().split('T')[0].replace(/-/g,'.'):'',dateTime:x.createdAt&&x.createdAt.toDate?x.createdAt.toDate().toLocaleString('ko-KR'):''}});
+    }catch(e){console.warn('챗봇 문의 로드 실패:',e)}
     R();console.log('✅ Firebase 데이터 로드 완료');
   }catch(e){console.warn('Firebase 로드 실패 (기본값 사용):',e.message)}
 }
@@ -382,6 +387,7 @@ downloads:[{id:'d1',cat:'카탈로그',title:'2026 종합 카탈로그',date:'20
 weekly:['월','화','수','목','금','토','일'].map(d=>({d,v:~~(Math.random()*180+20),p:~~(Math.random()*450+50)})),
 inquiries:[{id:1,nm:'김영호',co:'(주)대한전자',msg:'냉장고 제어기판 견적 문의',date:'2026-03-30',st:'new'},{id:2,nm:'이수진',co:'메디텍',msg:'의료기기 MCU 보드 샘플 요청',date:'2026-03-28',st:'replied'},{id:3,nm:'박준성',co:'솔라파워',msg:'태양광 인버터 제어기 기술 상담',date:'2026-03-27',st:'new'}],
 changeLog:[],
+chatInquiries:[],chatInqFilter:'전체',chatInqOpen:null,
 boardOpt:{news:{showDate:true,showViews:true,filter:'전체',search:'',openId:null},dl:{showDate:true,showViews:true,filter:'전체',search:'',openId:null}},
 };
 
@@ -425,7 +431,7 @@ $('#vidUp').addEventListener('change',function(e){const f=e.target.files[0];if(!
 function showModal(t,b,cb){$('#modalR').innerHTML=`<div class="modal-bg" onclick="clMd()"><div class="modal" onclick="event.stopPropagation()"><h3>${t}</h3>${b}<div class="m-acts"><button class="cancel" onclick="clMd()">취소</button><button class="ok" onclick="window._mcb()">확인</button></div></div></div>`;window._mcb=()=>{cb();clMd()}}
 function clMd(){$('#modalR').innerHTML=''}
 
-const NAV=[{id:'dashboard',lb:'📊 대시보드'},{id:'pages',lb:'🖥️ 페이지 편집'},{id:'inquiries',lb:'📬 문의 관리',bg:()=>S.inquiries.filter(i=>i.st==='new').length},{id:'news-b',lb:'📰 공지사항'},{id:'dl-b',lb:'📁 자료실'},{id:'settings',lb:'⚙️ 설정'}];
+const NAV=[{id:'dashboard',lb:'📊 대시보드'},{id:'pages',lb:'🖥️ 페이지 편집'},{id:'chat-inq',lb:'💬 챗봇 문의',bg:()=>S.chatInquiries?S.chatInquiries.filter(i=>i.status==='new').length:0},{id:'inquiries',lb:'📬 문의 관리',bg:()=>S.inquiries.filter(i=>i.st==='new').length},{id:'news-b',lb:'📰 공지사항'},{id:'dl-b',lb:'📁 자료실'},{id:'settings',lb:'⚙️ 설정'}];
 function sw(v){S.view=v;if(v!=='pages')S.edit=false;R()}
 function te(){S.edit=!S.edit;R()}
 function sp(p){S.page=p;R()}
@@ -434,10 +440,11 @@ function sm(m){S.mode=m;R()}
 function R(){
   let nav='';NAV.forEach(n=>{const b=n.bg?n.bg():0;nav+=`<button class="nb ${S.view===n.id?'on':''}" onclick="sw('${n.id}')">${n.lb}${b?`<span class="bdg">${b}</span>`:''}</button>`});$('#sbNav').innerHTML=nav;
   let bot='';if(S.view==='pages')bot+=`<button class="etb ${S.edit?'on':''}" onclick="te()">${S.edit?'👁️ 미리보기':'✏️ 편집 모드'}</button>`;bot+=`<button class="svb" onclick="fbSave()">💾 저장</button>`;$('#sbBot').innerHTML=bot;
-  const tt={dashboard:'대시보드',pages:'페이지 편집',inquiries:'문의 관리','news-b':'공지사항','dl-b':'자료실',settings:'설정'};$('#tbT').textContent=tt[S.view]||'';$('#eiTag').style.display=S.edit?'':'none';
+  const tt={dashboard:'대시보드',pages:'페이지 편집','chat-inq':'챗봇 문의',inquiries:'문의 관리','news-b':'공지사항','dl-b':'자료실',settings:'설정'};$('#tbT').textContent=tt[S.view]||'';$('#eiTag').style.display=S.edit?'':'none';
   const mc=$('#mc');
   if(S.view==='dashboard')mc.innerHTML=rDash();
   else if(S.view==='pages')mc.innerHTML=rPages();
+  else if(S.view==='chat-inq')mc.innerHTML=rChatInq();
   else if(S.view==='inquiries')mc.innerHTML=rInq();
   else if(S.view==='news-b')mc.innerHTML=rBoard('news','공지사항',S.news);
   else if(S.view==='dl-b')mc.innerHTML=rBoard('dl','자료실',S.downloads);
@@ -907,6 +914,117 @@ function showBM(type,idx){
 }
 $('#fileUp').addEventListener('change',function(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onloadend=()=>{_pf=r.result;_pfn=f.name;const d=$('#fD');if(d)d.innerHTML='📎 '+f.name+' <span style="color:#555">('+((f.size/1024).toFixed(0))+'KB)</span>'};r.readAsDataURL(f);this.value=''});
 function rInq(){return `<div style="max-width:700px;margin:0 auto">${S.inquiries.map(i=>`<div style="background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:6px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><div><b style="font-size:12px">${i.nm}</b> <span style="font-size:10px;color:#666">${i.co}</span> <span style="font-size:7px;font-weight:700;padding:2px 6px;border-radius:99px;${i.st==='new'?'background:rgba(56,189,248,.08);color:#38bdf8':i.st==='replied'?'background:rgba(52,211,153,.08);color:#34d399':'background:rgba(251,191,36,.08);color:#fbbf24'}">${i.st==='new'?'신규':i.st==='replied'?'답변완료':'진행중'}</span></div><span style="font-size:9px;color:#555">${i.date}</span></div><p style="font-size:11px;color:#888;background:rgba(0,0,0,.2);border:1px solid var(--bd);border-radius:7px;padding:8px">${i.msg}</p><button style="margin-top:6px;padding:5px 14px;border:none;border-radius:5px;background:var(--ac);color:#fff;font-size:10px;font-weight:600;font-family:inherit">답변</button></div>`).join('')}</div>`}
+
+// ── 챗봇 문의 게시판 ──
+function chatInqStatus(idx,st){
+  if(!fbdb)return;
+  const item=S.chatInquiries[idx];if(!item)return;
+  item.status=st;
+  const{doc,setDoc}=window._fb;
+  setDoc(doc(fbdb,'chatInquiries',item.id),{status:st},{merge:true}).then(()=>toast(st==='처리완료'?'처리 완료':'상태 변경')).catch(e=>console.error(e));
+  R();
+}
+function rChatInq(){
+  const items=S.chatInquiries||[];
+  const filters=['전체','신규','처리중','처리완료'];
+  const filtered=S.chatInqFilter==='전체'?items:items.filter(i=>
+    S.chatInqFilter==='신규'?i.status==='new':
+    S.chatInqFilter==='처리중'?i.status==='in_progress':
+    i.status==='done');
+  const counts={total:items.length,new:items.filter(i=>i.status==='new').length,prog:items.filter(i=>i.status==='in_progress').length,done:items.filter(i=>i.status==='done').length};
+
+  // 상세 보기
+  if(S.chatInqOpen!==null){
+    const item=items.find(i=>i.id===S.chatInqOpen);
+    if(!item){S.chatInqOpen=null;return rChatInq()}
+    const idx=items.indexOf(item);
+    const convo=item.conversation||[];
+    return `<div style="max-width:700px;margin:0 auto">
+      <button onclick="S.chatInqOpen=null;R()" style="border:none;background:none;color:var(--ac);font-size:11px;cursor:pointer;margin-bottom:12px;font-family:inherit">← 목록으로</button>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+        <div style="padding:16px;border-bottom:1px solid var(--bd)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:18px">${item.contactType==='email'?'📧':'📞'}</span>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:#fff">${item.userName||item.contact}</div>
+                <div style="font-size:10px;color:#888">${item.contact} · ${item.dateTime||item.date}</div>
+              </div>
+            </div>
+            <span style="font-size:8px;font-weight:700;padding:3px 8px;border-radius:99px;${item.status==='new'?'background:rgba(56,189,248,.1);color:#38bdf8':item.status==='in_progress'?'background:rgba(251,191,36,.1);color:#fbbf24':'background:rgba(52,211,153,.1);color:#34d399'}">${item.status==='new'?'신규':item.status==='in_progress'?'처리중':'처리완료'}</span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <span style="font-size:9px;padding:2px 8px;border-radius:99px;background:rgba(129,140,248,.1);color:#818cf8">${item.topic||'일반'}</span>
+            <span style="font-size:9px;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.05);color:#888">${item.category||''}</span>
+          </div>
+        </div>
+        <div style="padding:16px;max-height:360px;overflow-y:auto">
+          <div style="font-size:10px;font-weight:600;color:#666;margin-bottom:10px">대화 내역 (${convo.length}건)</div>
+          ${convo.map(m=>`<div style="display:flex;gap:8px;margin-bottom:10px;${m.role==='user'?'flex-direction:row-reverse':''}">
+            <div style="width:24px;height:24px;border-radius:50%;background:${m.role==='user'?'rgba(56,189,248,.15)':'rgba(129,140,248,.15)'};display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">${m.role==='user'?'👤':'🤖'}</div>
+            <div style="max-width:70%;padding:8px 12px;border-radius:12px;${m.role==='user'?'border-top-right-radius:4px;background:rgba(56,189,248,.08);color:#bae6fd':'border-top-left-radius:4px;background:rgba(255,255,255,.04);color:#d1d5db'};font-size:11px;line-height:1.5;white-space:pre-wrap">${m.text}</div>
+          </div>`).join('')}
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid var(--bd);display:flex;gap:6px">
+          ${item.status==='new'?`<button onclick="chatInqStatus(${idx},'in_progress')" style="flex:1;padding:8px;border:none;border-radius:6px;background:rgba(251,191,36,.15);color:#fbbf24;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">🔄 처리중으로 변경</button>`:''}
+          ${item.status!=='done'?`<button onclick="chatInqStatus(${idx},'done')" style="flex:1;padding:8px;border:none;border-radius:6px;background:rgba(52,211,153,.15);color:#34d399;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">✅ 처리 완료</button>`:''}
+          <button onclick="window.open('tel:'+encodeURIComponent('${item.contact}'))" style="padding:8px 14px;border:none;border-radius:6px;background:var(--ac);color:#fff;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">${item.contactType==='email'?'📧 이메일':'📞 전화'}</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // 목록 뷰
+  return `<div style="max-width:700px;margin:0 auto">
+    <!-- 통계 카드 -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:#fff">${counts.total}</div>
+        <div style="font-size:9px;color:#888">전체</div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:#38bdf8">${counts.new}</div>
+        <div style="font-size:9px;color:#888">신규</div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:#fbbf24">${counts.prog}</div>
+        <div style="font-size:9px;color:#888">처리중</div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:#34d399">${counts.done}</div>
+        <div style="font-size:9px;color:#888">완료</div>
+      </div>
+    </div>
+
+    <!-- 필터 -->
+    <div style="display:flex;gap:4px;margin-bottom:12px">
+      ${filters.map(f=>`<button onclick="S.chatInqFilter='${f}';R()" style="padding:5px 12px;border:1px solid ${S.chatInqFilter===f?'var(--ac)':'var(--bd)'};border-radius:99px;background:${S.chatInqFilter===f?'rgba(56,189,248,.1)':'rgba(255,255,255,.02)'};color:${S.chatInqFilter===f?'var(--ac)':'#888'};font-size:10px;cursor:pointer;font-family:inherit">${f}</button>`).join('')}
+    </div>
+
+    <!-- 리스트 -->
+    ${filtered.length===0?'<div style="text-align:center;padding:40px;color:#555;font-size:11px">챗봇 문의가 없습니다.<br><span style="font-size:9px;color:#444">웹사이트 챗봇에서 고객이 연락처를 남기면 이곳에 표시됩니다.</span></div>':''}
+    ${filtered.map((item,i)=>{
+      const realIdx=items.indexOf(item);
+      return `<div onclick="S.chatInqOpen='${item.id}';R()" style="background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:6px;cursor:pointer;transition:border-color .15s;display:flex;gap:12px;align-items:center" onmouseover="this.style.borderColor='rgba(255,255,255,.15)'" onmouseout="this.style.borderColor='rgba(255,255,255,.06)'">
+        <div style="width:36px;height:36px;border-radius:50%;background:${item.contactType==='email'?'rgba(129,140,248,.1)':'rgba(56,189,248,.1)'};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${item.contactType==='email'?'📧':'📞'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <b style="font-size:12px;color:#fff">${item.userName||item.contact}</b>
+              <span style="font-size:8px;font-weight:700;padding:2px 6px;border-radius:99px;${item.status==='new'?'background:rgba(56,189,248,.08);color:#38bdf8':item.status==='in_progress'?'background:rgba(251,191,36,.08);color:#fbbf24':'background:rgba(52,211,153,.08);color:#34d399'}">${item.status==='new'?'신규':item.status==='in_progress'?'처리중':'완료'}</span>
+            </div>
+            <span style="font-size:9px;color:#555">${item.date}</span>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center">
+            <span style="font-size:9px;padding:1px 6px;border-radius:99px;background:rgba(129,140,248,.08);color:#818cf8">${item.topic||'일반'}</span>
+            <span style="font-size:10px;color:#666">${item.contact}</span>
+            <span style="font-size:9px;color:#444;margin-left:auto">대화 ${(item.conversation||[]).length}건</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
 function rSet(){return `<div style="max-width:440px;margin:0 auto"><div class="sc" style="padding:16px;margin-bottom:8px"><div style="font-size:12px;font-weight:700;margin-bottom:12px">일반</div><div class="fg"><label>사이트 제목</label><input value="태승전자(주) TSELEC"/></div><div class="fg"><label>비밀번호</label><input type="password" placeholder="새 비밀번호"/></div><button onclick="toast('저장')" style="width:100%;padding:8px;border:none;border-radius:6px;background:#fff;color:#000;font-size:11px;font-weight:600;font-family:inherit">저장</button></div><div class="sc" style="padding:16px"><div style="font-size:12px;font-weight:700;margin-bottom:8px">데이터</div><button onclick="exJ()" style="padding:6px 10px;border:1px solid var(--bd);border-radius:5px;background:rgba(255,255,255,.02);color:#888;font-size:9px;font-family:inherit">JSON 내보내기</button></div></div>`}
 function exJ(){const d=JSON.stringify({content:S.content,images:S.images,videos:S.videos,clients:S.clients,news:S.news,downloads:S.downloads},null,2);const b=new Blob([d],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='tselec-content.json';a.click();toast('JSON 다운로드')}
 
@@ -928,112 +1046,7 @@ import('https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js').then(appMod=
 
 document.addEventListener('click',e=>{const a=e.target.closest('a');if(a){const h=a.getAttribute('href');if(h&&!h.startsWith('javascript:')&&!h.startsWith('blob:')&&!h.startsWith('data:'))e.preventDefault()}},true);
 
-// ── CS 챗봇 v2 — 문맥 인식 · 상담 태도 ──
-const CB_KB=[
-{id:'company',cat:'회사',k:['회사','태승','소개','뭐하는','어떤','알려'],a:'태승전자(주)는 1989년 설립된 마이크로컨트롤러 설계·제조 전문 기업입니다.\n\n가전, 의료기기, 태양광 분야의 제어기판과 디스플레이 솔루션을 제공하며, 인천 로봇랜드에 스마트팩토리를 운영하고 있습니다.',f:'더 궁금한 부분이 있으시면 말씀해 주세요!'},
-{id:'history',cat:'회사',k:['설립','창립','역사','연혁','언제'],a:'주요 연혁:\n• 1989년 — 설립\n• 2000년 — 기업부설연구소\n• 2003년 — ISO 9001\n• 2006년 — ISO 14001\n• 2016년 — 인천 스마트팩토리 이전',f:'30년 이상의 기술 노하우를 보유하고 있습니다.'},
-{id:'ceo',cat:'회사',k:['대표','ceo','사장','대표이사'],a:'태승전자(주)의 대표이사는 유태호 사장님입니다.'},
-{id:'location',cat:'회사',k:['위치','주소','어디','오시는','찾아','길'],a:'인천광역시 서구 로봇랜드로 249번길 62-8\n\n🚗 경부고속도로 인천 I.C → 로봇랜드 약 5분\n🚌 인천역 123번 버스 → 로봇랜드 하차\n🚇 인천 1호선 토성역 5번 출구 → 택시 10분',f:'방문 예정이시면 사전에 연락 주시면 안내해 드리겠습니다!'},
-{id:'contact',cat:'연락처',k:['전화','연락처','번호','콜','전화번호'],a:'대표번호: 032-329-7600~7603\n팩스: 032-329-7604\n영업시간: 평일 09:00~18:00 (주말·공휴일 휴무)',f:'연락처를 남겨주시면 담당자 연결도 도와드릴게요!'},
-{id:'fax',cat:'연락처',k:['팩스','fax'],a:'팩스번호: 032-329-7604'},
-{id:'hours',cat:'연락처',k:['영업시간','업무시간','근무시간','몇시','상담시간'],a:'영업시간: 평일 09:00~18:00 (주말·공휴일 휴무)',f:'영업시간 외에도 챗봇은 24시간 기본 안내가 가능합니다!'},
-{id:'email',cat:'연락처',k:['이메일','email','메일'],a:'이메일 문의는 홈페이지 문의하기 양식을 이용해 주세요.',f:'부서별 이메일은 추후 안내 예정입니다.'},
-{id:'products',cat:'제품',k:['제품','상품','뭐 만','생산','판매','취급'],a:'주요 제품군:\n🔹 메인 컨트롤러 (MC 시리즈)\n🔹 디스플레이 패널 (LCD/LED/OLED/TFT)\n🔹 냉장고 제어기판\n🔹 식기건조기/환기 제어기\n🔹 의료기기 MCU 보드\n🔹 태양광 인버터 제어기',f:'관심 있는 제품이 있으시면 말씀해 주세요!'},
-{id:'controller',cat:'제품',k:['컨트롤러','mc','mcu','메인컨트롤러'],a:'메인 컨트롤러(MC 시리즈):\n• 32/16/8-bit MCU\n• 5V~24V DC\n• UART, SPI, I2C 통신\n• -20°C~+70°C\n• ISO 9001, CE 인증\n• 3년 보증',f:'데이터시트가 필요하시면 자료실에서 다운로드하시거나 연락처를 남겨주세요.'},
-{id:'display',cat:'제품',k:['디스플레이','lcd','led','oled','tft','패널','화면'],a:'디스플레이 솔루션:\n• LCD 7-Segment\n• LCD 16x2 Character\n• LCD 128x64 Graphic\n• LED Driver IC\n• TFT LCD Controller\n• OLED Controller',f:'용도를 알려주시면 최적의 디스플레이를 추천드리겠습니다!'},
-{id:'appliance',cat:'제품',k:['냉장고','가전','식기건조','환기','에어컨'],a:'가전 제어기판:\n🔹 냉장고 — 인버터 압축기 제어\n🔹 식기건조기 — 온도·습도 자동제어\n🔹 환기시스템 — 팬속도/필터 감지'},
-{id:'medical',cat:'제품',k:['의료','메디컬','의료기기','병원'],a:'의료기기 MCU 보드 — ARM Cortex-M4\n• IEC 60601 규격 준수\n• 이중 안전회로 설계',f:'의료기기는 전문 상담을 권해드립니다. 연락처를 남겨주시면 엔지니어가 연락드리겠습니다.'},
-{id:'solar',cat:'제품',k:['태양광','인버터','솔라','에너지','신재생'],a:'태양광 인버터 제어기:\n• MPPT 99%+ 효율\n• 계통연계/독립형 전환\n• 원격 모니터링',f:'연락처를 남겨주시면 상세 상담 도와드리겠습니다!'},
-{id:'custom',cat:'서비스',k:['맞춤','커스텀','주문제작','의뢰','개발','odm','oem'],a:'맞춤형 제어 시스템 개발 가능합니다!\n회로설계 → PCB → 펌웨어 → 양산 턴키 솔루션',f:'연락처를 남겨주시면 영업팀에서 상세 상담 도와드리겠습니다!'},
-{id:'moq',cat:'서비스',k:['moq','최소주문','최소수량','소량','수량','몇개'],a:'MOQ(최소주문수량)는 제품에 따라 다릅니다.\n일반 양산: 100~500pcs 이상\n맞춤 개발: 협의 가능',f:'정확한 MOQ는 제품명과 연락처를 남겨주시면 안내드리겠습니다!'},
-{id:'cert',cat:'인증',k:['인증','iso','ce','kc','품질','rohs','koita'],a:'보유 인증:\n✅ ISO 9001:2015\n✅ ISO 14001:2015\n✅ CE Marking\n✅ KC Certification\n✅ KOITA 기업부설연구소\n✅ RoHS Compliance'},
-{id:'facility',cat:'시설',k:['공장','시설','규모','생산능력','스마트팩토리','면적'],a:'인천 로봇랜드 스마트팩토리:\n📐 6,500m² | 🏭 SMT 3라인\n📦 월 50만+ pcs | ⚙️ 가동률 96%+',f:'공장 견학은 사전 예약 후 방문 가능합니다!'},
-{id:'org',cat:'조직',k:['조직','부서','팀','구성','인원'],a:'조직: 대표이사(유태호), 영업팀, 연구소, 생산기술팀, 구매팀, 생산팀, 품질경영팀, 경영지원팀'},
-{id:'quote',cat:'서비스',k:['견적','가격','비용','얼마','단가','프라이스','price'],a:'가격은 수량·사양·커스터마이징에 따라 달라집니다.',f:'견적을 위해 제품명, 수량, 연락처를 알려주시면 빠르게 안내드리겠습니다!'},
-{id:'as',cat:'서비스',k:['as','a/s','수리','불량','교환','보증','반품','고장','하자'],a:'A/S: 032-329-7600\n메인 컨트롤러 보증 3년, 전문 엔지니어 대응',f:'제품 모델명이나 증상을 알려주시면 더 정확한 안내가 가능합니다!'},
-{id:'delivery',cat:'서비스',k:['납기','배송','기간','리드타임','며칠'],a:'납기준수율 98%. 제품·수량에 따라 다릅니다.',f:'정확한 납기는 제품명과 수량을 말씀해 주세요!'},
-{id:'recruit',cat:'기타',k:['채용','입사','취업','구인','지원','일자리'],a:'채용 문의: 경영지원팀 032-329-7600',f:'관심 가져주셔서 감사합니다!'},
-{id:'download',cat:'기타',k:['카탈로그','자료','다운로드','데이터시트','매뉴얼','문서'],a:'홈페이지 고객센터 > 자료실에서 다운로드 가능합니다.',f:'특정 제품 자료가 필요하시면 제품명을 말씀해 주세요!'},
-{id:'process',cat:'시설',k:['공정','제조','과정','smt','생산과정'],a:'11단계 공정: 자재입고→크림납인쇄→SMT→수삽입→자동납땜→목시검사→조립→ICT→프로그램→기능검사→포장출하\n불량률 50PPM 이하'},
-{id:'sample',cat:'서비스',k:['샘플','시제품','테스트','시험','평가'],a:'샘플 요청 가능합니다! 제품에 따라 유/무상이 다릅니다.',f:'필요한 제품과 수량, 연락처를 남겨주세요!'},
-{id:'partner',cat:'서비스',k:['협력','파트너','거래','납품','공급','제휴'],a:'신규 거래처 협력을 환영합니다! 30년 이상 제조 노하우와 안정적 생산 체계를 갖추고 있습니다.',f:'연락처를 남겨주시면 영업팀에서 상담 도와드리겠습니다!'},
-];
-const PHONE_RE=/(?:0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}|01[016789][-.\s]?\d{3,4}[-.\s]?\d{4})/;
-const EMAIL_RE=/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
-let cbOpen=false,cbCtx={lastTopic:'',lastCat:'',awaiting:false,topic:'',lastResp:''},cbMsgs=[{r:'bot',t:'안녕하세요! 태승전자 고객지원 챗봇입니다 😊\n\n제품 문의, 견적 요청, 기술 상담 등 편하게 말씀해 주세요!\n연락처를 남겨주시면 담당자가 직접 연락드리겠습니다.',tm:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}];
-function cbFind(q){
-  const ql=q.toLowerCase().replace(/[?.,!~\s]+/g,' ').trim();
-  // 1) 전화번호 감지
-  const pm=q.match(PHONE_RE);
-  if(pm){cbCtx.awaiting=false;const tp=cbCtx.topic||cbCtx.lastCat||'제품';return`감사합니다! 연락처(${pm[0]})를 확인했습니다.\n\n${tp} 관련 문의로 접수하겠습니다. 담당자가 영업시간(평일 09:00~18:00) 내에 연락드리겠습니다.\n\n다른 궁금하신 점이 있으시면 말씀해 주세요!`}
-  // 2) 이메일 감지
-  const em=q.match(EMAIL_RE);
-  if(em){cbCtx.awaiting=false;const tp=cbCtx.topic||cbCtx.lastCat||'제품';return`감사합니다! 이메일(${em[0]})로 접수하겠습니다.\n\n${tp} 관련 문의를 담당자에게 전달드리겠습니다.\n\n추가 문의사항이 있으시면 말씀해 주세요!`}
-  // 3) 짧은 입력 (1~2자)
-  if(q.replace(/\s/g,'').length<=2){
-    if(/^[네예응요]$/i.test(q.trim())){
-      if(cbCtx.awaiting)return'네! 연락 가능한 전화번호나 이메일을 남겨주시면 담당자가 연락드리겠습니다.';
-      return'네! 무엇을 도와드릴까요? 제품, 견적, 기술 상담 등 편하게 말씀해 주세요.';
-    }
-    return'조금 더 구체적으로 말씀해 주시겠어요?\n\n예: "컨트롤러 문의", "견적 받고 싶어요", "MOQ가 어떻게 되나요?"';
-  }
-  // 4) 문의/상담 요청
-  if(/문의|상담|알고\s?싶|궁금|질문/.test(ql)&&!/전화|번호/.test(ql)){
-    let tp='';for(const e of CB_KB){for(const k of e.k)if(ql.includes(k.toLowerCase())){tp=e.cat;cbCtx.lastTopic=e.id;cbCtx.lastCat=e.cat;break}if(tp)break}
-    cbCtx.awaiting=true;cbCtx.topic=tp||'일반';
-    if(tp)return`${tp} 관련 문의시군요! 담당자 연결을 도와드리겠습니다.\n\n연락 가능한 전화번호나 이메일을 남겨주시면 빠르게 회신드리겠습니다.`;
-    return'어떤 부분이 궁금하신가요?\n\n• 제품 사양/종류\n• 견적/가격\n• 맞춤 개발\n• MOQ/납기\n• A/S 기술지원';
-  }
-  // 5) "연락주세요" 등
-  if(/연락\s?주|콜백|전화\s?주|전화\s?해|연결\s?해|상담\s?원|사람/.test(ql)){
-    cbCtx.awaiting=true;cbCtx.topic=cbCtx.lastCat||'일반';
-    return'네, 담당자 연결을 도와드리겠습니다!\n\n연락 가능한 전화번호를 남겨주시면 영업시간 내에 연락드리겠습니다.';
-  }
-  // 6) 인사
-  if(/^(안녕|반갑|하이|hello|hi|헬로)/.test(ql))return'안녕하세요! 태승전자 고객지원 챗봇입니다 😊\n\n제품 문의, 견적 요청, 기술 상담 등 편하게 말씀해 주세요!';
-  // 7) 감사
-  if(/감사|고마|ㄱㅅ|thx|thanks|수고/.test(ql))return'도움이 되셨다면 기쁩니다! 😊\n추가 문의사항이 있으시면 언제든 말씀해 주세요.';
-  // 8) 불만
-  if(/별로|실망|아쉽|불편|화나|짜증|답답/.test(ql))return'불편을 드려 죄송합니다.\n구체적인 내용을 말씀해 주시거나 032-329-7600으로 직접 연락 주시면 빠르게 도와드리겠습니다.';
-  // 9) KB 매칭
-  let bs=0,be=null;for(const e of CB_KB){let sc=0;for(const k of e.k)if(ql.includes(k.toLowerCase()))sc+=1+(k.length>3?1:0);if(sc>0&&e.cat===cbCtx.lastCat)sc+=0.5;if(sc>bs){bs=sc;be=e}}
-  if(be&&bs>=1){cbCtx.lastTopic=be.id;cbCtx.lastCat=be.cat;let t=be.a;if(t===cbCtx.lastResp&&be.f)t=be.f;else if(be.f)t+='\n\n'+be.f;cbCtx.lastResp=be.a;return t}
-  // 10) 연락처 대기 중 숫자 입력
-  if(cbCtx.awaiting&&/\d{4,}/.test(q.replace(/[-.\s]/g,''))){
-    cbCtx.awaiting=false;const tp=cbCtx.topic||'제품';
-    return`감사합니다! 연락처를 확인했습니다.\n\n${tp} 관련 문의로 접수하겠습니다. 담당자가 영업시간 내에 연락드리겠습니다.`;
-  }
-  if(cbCtx.awaiting)return'문의 접수를 위해 연락 가능한 전화번호나 이메일을 알려주시겠어요?\n\n예: 010-1234-5678 또는 email@example.com';
-  // 11) 폴백
-  cbCtx.awaiting=true;cbCtx.topic='일반';
-  return'죄송합니다, 해당 내용에 대해 바로 답변드리기 어려운 부분이 있네요.\n\n담당자 연결을 도와드릴까요? 연락처를 남겨주시면 확인 후 연락드리겠습니다!\n\n또는 대표번호 032-329-7600으로 직접 문의도 가능합니다.';
-}
-function cbSend(){const inp=document.getElementById('cbInp');const q=inp.value.trim();if(!q)return;const tm=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});cbMsgs.push({r:'user',t:q,tm});inp.value='';cbRender();setTimeout(()=>{cbMsgs.push({r:'bot',t:cbFind(q),tm:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})});cbRender()},300+Math.random()*500)}
-function cbToggle(){cbOpen=!cbOpen;cbRender()}
-function cbRender(){
-  let el=document.getElementById('chatbot');if(!el){el=document.createElement('div');el.id='chatbot';document.body.appendChild(el)}
-  if(!cbOpen){el.innerHTML=`<button onclick="cbToggle()" style="position:fixed;bottom:16px;right:16px;z-index:9999;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#818cf8);border:none;color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 15px rgba(56,189,248,.3);display:flex;align-items:center;justify-content:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">💬</button>`;return}
-  let msgs='';cbMsgs.forEach(m=>{
-    const isU=m.r==='user';
-    msgs+=`<div style="display:flex;gap:8px;${isU?'flex-direction:row-reverse':''}">
-      <div style="width:26px;height:26px;border-radius:50%;background:${isU?'rgba(255,255,255,.08)':'linear-gradient(135deg,#38bdf8,#818cf8)'};display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:2px">${isU?'👤':'🤖'}</div>
-      <div style="max-width:75%"><div style="display:inline-block;text-align:left;padding:8px 12px;border-radius:14px;${isU?'border-top-right-radius:4px;background:rgba(56,189,248,.15);color:#bae6fd':'border-top-left-radius:4px;background:rgba(255,255,255,.05);color:#d1d5db'};font-size:12px;line-height:1.6;white-space:pre-wrap">${m.t}</div><div style="font-size:8px;color:#444;margin-top:2px;${isU?'text-align:right':''}">${m.tm}</div></div></div>`;
-  });
-  el.innerHTML=`<div style="position:fixed;bottom:16px;right:16px;z-index:9999;width:340px;max-width:calc(100vw - 32px);height:480px;max-height:calc(100vh - 80px);border-radius:16px;background:#0a0a0a;border:1px solid rgba(255,255,255,.08);box-shadow:0 8px 32px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);background:linear-gradient(90deg,rgba(56,189,248,.08),rgba(129,140,248,.08))">
-      <div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#818cf8);display:flex;align-items:center;justify-content:center;font-size:14px">🤖</div><div><div style="font-size:12px;font-weight:700;color:#fff">태승전자 고객지원</div><div style="font-size:9px;color:#34d399;display:flex;align-items:center;gap:3px"><span style="width:5px;height:5px;border-radius:50%;background:#34d399;display:inline-block"></span>온라인</div></div></div>
-      <button onclick="cbToggle()" style="width:28px;height:28px;border-radius:6px;border:none;background:rgba(255,255,255,.03);color:#888;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
-    </div>
-    <div id="cbMsgArea" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px">${msgs}</div>
-    <div style="padding:10px;border-top:1px solid rgba(255,255,255,.05);display:flex;gap:6px">
-      ${cbCtx.awaiting?'<div style="padding:0 10px 6px"><div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.15)"><span style="font-size:11px">📞</span><span style="font-size:10px;color:#7dd3fc">전화번호나 이메일을 입력하시면 문의 접수가 완료됩니다</span></div></div>':''}
-      <input id="cbInp" placeholder="${cbCtx.awaiting?'전화번호 또는 이메일을 입력하세요...':'메시지를 입력하세요...'}" onkeydown="if(event.key==='Enter')cbSend()" style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 12px;color:#fff;font-size:12px;font-family:inherit;outline:none"/>
-      <button onclick="cbSend()" style="width:36px;height:36px;border-radius:10px;background:#38bdf8;border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">➤</button>
-    </div>
-  </div>`;
-  const ma=document.getElementById('cbMsgArea');if(ma)ma.scrollTop=ma.scrollHeight;
-}
-cbRender();
+// 챗봇 UI 제거됨 — 웹사이트 챗봇 문의는 Firestore chatInquiries를 통해 관리
 </script>
 </body>
 </html>
