@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>TSelec Admin</title>
 <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-auth-compat.js"></script>
+
 <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-compat.js"></script>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
@@ -242,7 +242,7 @@ textarea.edin{resize:vertical;min-height:36px}
 </head>
 <body>
 <div class="shell">
-<aside class="sb"><div class="sb-hd"><div class="sb-logo"><span>TSE</span><span>LEC</span></div><span style="font-size:8px;color:var(--ac);font-weight:700;margin-left:auto">ADMIN</span></div><nav class="sb-nav" id="sbNav"></nav><div class="sb-bot" id="sbBot"></div><div style="padding:12px 16px;border-top:1px solid #e5e7eb"><button id="fbAuthBtn" onclick="fbUser?fbLogout():fbLogin()" style="width:100%;padding:8px;border:none;border-radius:6px;cursor:pointer;font-size:13px;background:#f3f4f6;color:#374151">🔑 로그인</button></div></aside>
+<aside class="sb"><div class="sb-hd"><div class="sb-logo"><span>TSE</span><span>LEC</span></div><span style="font-size:8px;color:var(--ac);font-weight:700;margin-left:auto">ADMIN</span></div><nav class="sb-nav" id="sbNav"></nav><div class="sb-bot" id="sbBot"></div><div style="padding:12px 16px;border-top:1px solid #e5e7eb"><button id="fbAuthBtn" onclick="showLoginModal()" style="width:100%;padding:8px;border:none;border-radius:6px;cursor:pointer;font-size:13px;background:#f3f4f6;color:#374151">🔑 로그인</button></div></aside>
 <main class="mn"><header class="topbar"><h1 id="tbT"></h1><div class="topbar-r"><span class="eind" id="eiTag" style="display:none">편집 활성</span><div class="avt">T</div></div></header><div class="mc" id="mc"></div></main>
 </div>
 <input type="file" id="imgUp" accept="image/*" style="display:none"/><input type="file" id="vidUp" accept="video/*" style="display:none"/><input type="file" id="fileUp" style="display:none"/>
@@ -253,16 +253,24 @@ textarea.edin{resize:vertical;min-height:36px}
 const firebaseConfig={apiKey:"AIzaSyDmgOBu3kPUGzff_CyR647kIbN4F91seJE",authDomain:"gen-lang-client-0276589179.firebaseapp.com",projectId:"gen-lang-client-0276589179",storageBucket:"gen-lang-client-0276589179.firebasestorage.app",messagingSenderId:"746025368201",appId:"1:746025368201:web:0a89d91b9bf2aa60a36458"};
 firebase.initializeApp(firebaseConfig);
 const fbdb=firebase.app().firestore('ai-studio-e97c649f-c50c-4cd5-8952-6640d34f2444');
-const auth=firebase.auth();
-const gProvider=new firebase.auth.GoogleAuthProvider();
 let fbUser=null;
 
-auth.onAuthStateChanged(u=>{fbUser=u;if(typeof R==='function')R();});
-async function fbLogin(){try{await auth.signInWithPopup(gProvider);toast('로그인 성공')}catch(e){toast('로그인 실패: '+e.message)}}
-function fbLogout(){auth.signOut();toast('로그아웃')}
+function showLoginModal(){
+  if(fbUser){fbUser=null;R();const b=document.getElementById('fbAuthBtn');if(b)b.textContent='🔑 로그인';toast('로그아웃');return}
+  const m=document.createElement('div');m.id='loginModal';m.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999';
+  m.innerHTML=`<div style="background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:28px;width:320px"><h3 style="color:#fff;margin:0 0 18px;font-size:16px;text-align:center">관리자 로그인</h3><div style="margin-bottom:12px"><label style="font-size:11px;color:#aaa;display:block;margin-bottom:4px">아이디</label><input id="loginId" style="width:100%;padding:10px;border:1px solid #444;border-radius:6px;background:#111;color:#fff;font-size:13px;box-sizing:border-box" placeholder="아이디 입력"/></div><div style="margin-bottom:18px"><label style="font-size:11px;color:#aaa;display:block;margin-bottom:4px">비밀번호</label><input id="loginPw" type="password" style="width:100%;padding:10px;border:1px solid #444;border-radius:6px;background:#111;color:#fff;font-size:13px;box-sizing:border-box" placeholder="비밀번호 입력"/></div><button onclick="doLogin()" style="width:100%;padding:10px;border:none;border-radius:6px;background:var(--ac);color:#fff;font-size:13px;font-weight:600;cursor:pointer">로그인</button><button onclick="document.getElementById('loginModal').remove()" style="width:100%;padding:8px;border:none;background:transparent;color:#888;font-size:11px;cursor:pointer;margin-top:6px">취소</button></div>`;
+  document.body.appendChild(m);
+  document.getElementById('loginId').focus();
+  document.getElementById('loginPw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+}
+function doLogin(){
+  const id=document.getElementById('loginId').value,pw=document.getElementById('loginPw').value;
+  if(id==='tsadmin'&&pw==='admin'){fbUser={id:'tsadmin'};document.getElementById('loginModal').remove();const b=document.getElementById('fbAuthBtn');if(b)b.textContent='🔓 로그아웃 (관리자)';toast('로그인 성공');R()}
+  else{toast('아이디 또는 비밀번호가 틀립니다')}
+}
 
 async function fbSave(){
-  if(!fbUser){toast('로그인이 필요합니다');return}
+  if(!fbUser){toast('로그인이 필요합니다');showLoginModal();return}
   try{
     await fbdb.collection('siteContent').doc('text').set(S.content);
     await fbdb.collection('siteContent').doc('media').set({images:S.images,videos:S.videos});
@@ -826,7 +834,6 @@ function rSet(){return `<div style="max-width:440px;margin:0 auto"><div class="s
 function exJ(){const d=JSON.stringify({content:S.content,images:S.images,videos:S.videos,clients:S.clients,news:S.news,downloads:S.downloads},null,2);const b=new Blob([d],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='tselec-content.json';a.click();toast('JSON 다운로드')}
 
 R();fbLoad();
-auth.onAuthStateChanged(u=>{const b=document.getElementById('fbAuthBtn');if(b)b.textContent=u?'🔓 로그아웃 ('+u.email.split('@')[0]+')':'🔑 로그인';});
 document.addEventListener('click',e=>{const a=e.target.closest('a');if(a){const h=a.getAttribute('href');if(h&&!h.startsWith('javascript:')&&!h.startsWith('blob:')&&!h.startsWith('data:'))e.preventDefault()}},true);
 </script>
 </body>
