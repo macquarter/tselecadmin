@@ -928,31 +928,87 @@ import('https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js').then(appMod=
 
 document.addEventListener('click',e=>{const a=e.target.closest('a');if(a){const h=a.getAttribute('href');if(h&&!h.startsWith('javascript:')&&!h.startsWith('blob:')&&!h.startsWith('data:'))e.preventDefault()}},true);
 
-// ── 챗봇 ──
+// ── CS 챗봇 v2 — 문맥 인식 · 상담 태도 ──
 const CB_KB=[
-{k:['회사','태승','소개','뭐하는','어떤'],a:'태승전자(주)는 1989년 설립된 마이크로컨트롤러 설계·제조 전문 기업입니다. 가전, 의료기기, 태양광 분야의 제어기판과 디스플레이 솔루션을 제공하고 있으며, 인천 로봇랜드에 최첨단 스마트팩토리를 운영하고 있습니다.'},
-{k:['설립','창립','역사','연혁'],a:'태승전자는 1989년에 설립되었습니다. 2000년 기업부설연구소 설립, 2003년 ISO 9001 인증, 2006년 ISO 14001 인증을 취득했으며, 2016년 인천 청라지구로 확장 이전했습니다.'},
-{k:['대표','CEO','사장'],a:'태승전자(주)의 대표이사는 유태호 사장님입니다.'},
-{k:['위치','주소','어디','오시는','찾아'],a:'인천광역시 서구 로봇랜드로 249번길 62-8\n\n🚗 경부고속도로 인천 I.C에서 로봇랜드 방향 약 5분\n🚌 인천역 앞 123번 버스 → 로봇랜드 하차\n🚇 인천 1호선 토성역 5번 출구 택시'},
-{k:['전화','연락','번호','문의','콜','전화번호'],a:'대표번호: 032-329-7600~7603\n팩스: 032-329-7604\n영업시간: 평일 09:00~18:00 (주말·공휴일 휴무)'},
-{k:['제품','상품','뭐 만','생산','판매'],a:'주요 제품:\n🔹 메인 컨트롤러 (MC 시리즈)\n🔹 디스플레이 패널 (LCD/LED/OLED/TFT)\n🔹 냉장고 제어기판\n🔹 식기건조기/환기시스템 제어기\n🔹 의료기기 MCU 보드\n🔹 태양광 인버터 제어기'},
-{k:['컨트롤러','MC','MCU','메인'],a:'메인 컨트롤러(MC 시리즈): 32/16/8-bit MCU, 5V~24V DC, UART/SPI/I2C 통신, -20°C~+70°C, ISO 9001/CE 인증, 3년 보증'},
-{k:['디스플레이','LCD','LED','OLED','TFT','패널'],a:'디스플레이 솔루션: LCD 7-Segment, LCD 16x2 Character, LCD 128x64 Graphic, LED Driver IC, TFT LCD Controller, OLED Controller'},
-{k:['의료','메디컬','의료기기'],a:'의료기기 MCU 보드: ARM Cortex-M4 기반, IEC 60601 규격 준수, 이중 안전회로 설계'},
-{k:['태양광','인버터','솔라'],a:'태양광 인버터 제어기: MPPT 99%+ 효율, 계통연계/독립형 전환, 원격 모니터링 지원'},
-{k:['맞춤','커스텀','주문','의뢰','개발'],a:'맞춤형 제어 시스템 개발 가능합니다! 30년 이상의 설계 노하우로 턴키 솔루션을 제공합니다.\n문의: 032-329-7600 (영업팀)'},
-{k:['인증','ISO','CE','KC','품질'],a:'보유 인증: ISO 9001:2015, ISO 14001:2015, CE Marking, KC Certification, KOITA 기업부설연구소, RoHS Compliance'},
-{k:['공장','시설','규모','스마트팩토리'],a:'인천 로봇랜드 스마트팩토리:\n📐 6,500m² | 🏭 SMT 3라인 | 📦 월 50만+ pcs | ⚙️ 가동률 96%+'},
-{k:['조직','부서','팀'],a:'조직: 대표이사(유태호), 영업팀, 연구소, 생산기술팀, 구매팀, 생산팀, 품질경영팀, 경영지원팀'},
-{k:['견적','가격','비용','얼마'],a:'견적은 수량·사양에 따라 다릅니다.\n📞 032-329-7600 (영업팀) 또는 홈페이지 문의 양식을 이용해 주세요.'},
-{k:['AS','A/S','수리','불량','보증'],a:'A/S: 032-329-7600 | 메인 컨트롤러 보증기간 3년 | 전문 엔지니어가 신속 대응'},
-{k:['납기','배송','리드타임'],a:'납기준수율 98%. 구체적 일정은 영업팀(032-329-7600)으로 문의해 주세요.'},
-{k:['카탈로그','자료','다운로드','데이터시트'],a:'홈페이지 고객센터 > 자료실에서 다운로드 가능합니다.'},
-{k:['공정','제조','SMT'],a:'11단계 공정: 자재입고→크림납인쇄→SMT→수삽입→자동납땜→목시검사→조립→ICT→프로그램→기능검사→포장출하\n불량률 50PPM 이하, 검사커버리지 100%'},
+{id:'company',cat:'회사',k:['회사','태승','소개','뭐하는','어떤','알려'],a:'태승전자(주)는 1989년 설립된 마이크로컨트롤러 설계·제조 전문 기업입니다.\n\n가전, 의료기기, 태양광 분야의 제어기판과 디스플레이 솔루션을 제공하며, 인천 로봇랜드에 스마트팩토리를 운영하고 있습니다.',f:'더 궁금한 부분이 있으시면 말씀해 주세요!'},
+{id:'history',cat:'회사',k:['설립','창립','역사','연혁','언제'],a:'주요 연혁:\n• 1989년 — 설립\n• 2000년 — 기업부설연구소\n• 2003년 — ISO 9001\n• 2006년 — ISO 14001\n• 2016년 — 인천 스마트팩토리 이전',f:'30년 이상의 기술 노하우를 보유하고 있습니다.'},
+{id:'ceo',cat:'회사',k:['대표','ceo','사장','대표이사'],a:'태승전자(주)의 대표이사는 유태호 사장님입니다.'},
+{id:'location',cat:'회사',k:['위치','주소','어디','오시는','찾아','길'],a:'인천광역시 서구 로봇랜드로 249번길 62-8\n\n🚗 경부고속도로 인천 I.C → 로봇랜드 약 5분\n🚌 인천역 123번 버스 → 로봇랜드 하차\n🚇 인천 1호선 토성역 5번 출구 → 택시 10분',f:'방문 예정이시면 사전에 연락 주시면 안내해 드리겠습니다!'},
+{id:'contact',cat:'연락처',k:['전화','연락처','번호','콜','전화번호'],a:'대표번호: 032-329-7600~7603\n팩스: 032-329-7604\n영업시간: 평일 09:00~18:00 (주말·공휴일 휴무)',f:'연락처를 남겨주시면 담당자 연결도 도와드릴게요!'},
+{id:'fax',cat:'연락처',k:['팩스','fax'],a:'팩스번호: 032-329-7604'},
+{id:'hours',cat:'연락처',k:['영업시간','업무시간','근무시간','몇시','상담시간'],a:'영업시간: 평일 09:00~18:00 (주말·공휴일 휴무)',f:'영업시간 외에도 챗봇은 24시간 기본 안내가 가능합니다!'},
+{id:'email',cat:'연락처',k:['이메일','email','메일'],a:'이메일 문의는 홈페이지 문의하기 양식을 이용해 주세요.',f:'부서별 이메일은 추후 안내 예정입니다.'},
+{id:'products',cat:'제품',k:['제품','상품','뭐 만','생산','판매','취급'],a:'주요 제품군:\n🔹 메인 컨트롤러 (MC 시리즈)\n🔹 디스플레이 패널 (LCD/LED/OLED/TFT)\n🔹 냉장고 제어기판\n🔹 식기건조기/환기 제어기\n🔹 의료기기 MCU 보드\n🔹 태양광 인버터 제어기',f:'관심 있는 제품이 있으시면 말씀해 주세요!'},
+{id:'controller',cat:'제품',k:['컨트롤러','mc','mcu','메인컨트롤러'],a:'메인 컨트롤러(MC 시리즈):\n• 32/16/8-bit MCU\n• 5V~24V DC\n• UART, SPI, I2C 통신\n• -20°C~+70°C\n• ISO 9001, CE 인증\n• 3년 보증',f:'데이터시트가 필요하시면 자료실에서 다운로드하시거나 연락처를 남겨주세요.'},
+{id:'display',cat:'제품',k:['디스플레이','lcd','led','oled','tft','패널','화면'],a:'디스플레이 솔루션:\n• LCD 7-Segment\n• LCD 16x2 Character\n• LCD 128x64 Graphic\n• LED Driver IC\n• TFT LCD Controller\n• OLED Controller',f:'용도를 알려주시면 최적의 디스플레이를 추천드리겠습니다!'},
+{id:'appliance',cat:'제품',k:['냉장고','가전','식기건조','환기','에어컨'],a:'가전 제어기판:\n🔹 냉장고 — 인버터 압축기 제어\n🔹 식기건조기 — 온도·습도 자동제어\n🔹 환기시스템 — 팬속도/필터 감지'},
+{id:'medical',cat:'제품',k:['의료','메디컬','의료기기','병원'],a:'의료기기 MCU 보드 — ARM Cortex-M4\n• IEC 60601 규격 준수\n• 이중 안전회로 설계',f:'의료기기는 전문 상담을 권해드립니다. 연락처를 남겨주시면 엔지니어가 연락드리겠습니다.'},
+{id:'solar',cat:'제품',k:['태양광','인버터','솔라','에너지','신재생'],a:'태양광 인버터 제어기:\n• MPPT 99%+ 효율\n• 계통연계/독립형 전환\n• 원격 모니터링',f:'연락처를 남겨주시면 상세 상담 도와드리겠습니다!'},
+{id:'custom',cat:'서비스',k:['맞춤','커스텀','주문제작','의뢰','개발','odm','oem'],a:'맞춤형 제어 시스템 개발 가능합니다!\n회로설계 → PCB → 펌웨어 → 양산 턴키 솔루션',f:'연락처를 남겨주시면 영업팀에서 상세 상담 도와드리겠습니다!'},
+{id:'moq',cat:'서비스',k:['moq','최소주문','최소수량','소량','수량','몇개'],a:'MOQ(최소주문수량)는 제품에 따라 다릅니다.\n일반 양산: 100~500pcs 이상\n맞춤 개발: 협의 가능',f:'정확한 MOQ는 제품명과 연락처를 남겨주시면 안내드리겠습니다!'},
+{id:'cert',cat:'인증',k:['인증','iso','ce','kc','품질','rohs','koita'],a:'보유 인증:\n✅ ISO 9001:2015\n✅ ISO 14001:2015\n✅ CE Marking\n✅ KC Certification\n✅ KOITA 기업부설연구소\n✅ RoHS Compliance'},
+{id:'facility',cat:'시설',k:['공장','시설','규모','생산능력','스마트팩토리','면적'],a:'인천 로봇랜드 스마트팩토리:\n📐 6,500m² | 🏭 SMT 3라인\n📦 월 50만+ pcs | ⚙️ 가동률 96%+',f:'공장 견학은 사전 예약 후 방문 가능합니다!'},
+{id:'org',cat:'조직',k:['조직','부서','팀','구성','인원'],a:'조직: 대표이사(유태호), 영업팀, 연구소, 생산기술팀, 구매팀, 생산팀, 품질경영팀, 경영지원팀'},
+{id:'quote',cat:'서비스',k:['견적','가격','비용','얼마','단가','프라이스','price'],a:'가격은 수량·사양·커스터마이징에 따라 달라집니다.',f:'견적을 위해 제품명, 수량, 연락처를 알려주시면 빠르게 안내드리겠습니다!'},
+{id:'as',cat:'서비스',k:['as','a/s','수리','불량','교환','보증','반품','고장','하자'],a:'A/S: 032-329-7600\n메인 컨트롤러 보증 3년, 전문 엔지니어 대응',f:'제품 모델명이나 증상을 알려주시면 더 정확한 안내가 가능합니다!'},
+{id:'delivery',cat:'서비스',k:['납기','배송','기간','리드타임','며칠'],a:'납기준수율 98%. 제품·수량에 따라 다릅니다.',f:'정확한 납기는 제품명과 수량을 말씀해 주세요!'},
+{id:'recruit',cat:'기타',k:['채용','입사','취업','구인','지원','일자리'],a:'채용 문의: 경영지원팀 032-329-7600',f:'관심 가져주셔서 감사합니다!'},
+{id:'download',cat:'기타',k:['카탈로그','자료','다운로드','데이터시트','매뉴얼','문서'],a:'홈페이지 고객센터 > 자료실에서 다운로드 가능합니다.',f:'특정 제품 자료가 필요하시면 제품명을 말씀해 주세요!'},
+{id:'process',cat:'시설',k:['공정','제조','과정','smt','생산과정'],a:'11단계 공정: 자재입고→크림납인쇄→SMT→수삽입→자동납땜→목시검사→조립→ICT→프로그램→기능검사→포장출하\n불량률 50PPM 이하'},
+{id:'sample',cat:'서비스',k:['샘플','시제품','테스트','시험','평가'],a:'샘플 요청 가능합니다! 제품에 따라 유/무상이 다릅니다.',f:'필요한 제품과 수량, 연락처를 남겨주세요!'},
+{id:'partner',cat:'서비스',k:['협력','파트너','거래','납품','공급','제휴'],a:'신규 거래처 협력을 환영합니다! 30년 이상 제조 노하우와 안정적 생산 체계를 갖추고 있습니다.',f:'연락처를 남겨주시면 영업팀에서 상담 도와드리겠습니다!'},
 ];
-let cbOpen=false,cbMsgs=[{r:'bot',t:'안녕하세요! 태승전자 CS 챗봇입니다.\n제품, 견적, 기술 상담 등 무엇이든 물어보세요!',tm:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}];
-function cbFind(q){const ql=q.toLowerCase().replace(/[?.,!]/g,'');let bs=0,ba='';for(const i of CB_KB){let sc=0;for(const k of i.k)if(ql.includes(k.toLowerCase()))sc++;if(sc>bs){bs=sc;ba=i.a}}if(bs>0)return ba;if(/안녕|반갑|하이|hello|hi/i.test(ql))return'안녕하세요! 태승전자 고객지원 챗봇입니다 😊\n무엇을 도와드릴까요?';if(/감사|고마/i.test(ql))return'도움이 되셨다면 기쁩니다! 추가 문의사항이 있으시면 언제든 말씀해 주세요 😊';return'죄송합니다, 해당 내용은 정확히 답변드리기 어렵습니다.\n📞 032-329-7600~7603\n평일 09:00~18:00 상담 가능합니다.'}
-function cbSend(){const inp=document.getElementById('cbInp');const q=inp.value.trim();if(!q)return;const tm=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});cbMsgs.push({r:'user',t:q,tm});inp.value='';cbRender();setTimeout(()=>{cbMsgs.push({r:'bot',t:cbFind(q),tm:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})});cbRender()},400+Math.random()*400)}
+const PHONE_RE=/(?:0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}|01[016789][-.\s]?\d{3,4}[-.\s]?\d{4})/;
+const EMAIL_RE=/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+let cbOpen=false,cbCtx={lastTopic:'',lastCat:'',awaiting:false,topic:'',lastResp:''},cbMsgs=[{r:'bot',t:'안녕하세요! 태승전자 고객지원 챗봇입니다 😊\n\n제품 문의, 견적 요청, 기술 상담 등 편하게 말씀해 주세요!\n연락처를 남겨주시면 담당자가 직접 연락드리겠습니다.',tm:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}];
+function cbFind(q){
+  const ql=q.toLowerCase().replace(/[?.,!~\s]+/g,' ').trim();
+  // 1) 전화번호 감지
+  const pm=q.match(PHONE_RE);
+  if(pm){cbCtx.awaiting=false;const tp=cbCtx.topic||cbCtx.lastCat||'제품';return`감사합니다! 연락처(${pm[0]})를 확인했습니다.\n\n${tp} 관련 문의로 접수하겠습니다. 담당자가 영업시간(평일 09:00~18:00) 내에 연락드리겠습니다.\n\n다른 궁금하신 점이 있으시면 말씀해 주세요!`}
+  // 2) 이메일 감지
+  const em=q.match(EMAIL_RE);
+  if(em){cbCtx.awaiting=false;const tp=cbCtx.topic||cbCtx.lastCat||'제품';return`감사합니다! 이메일(${em[0]})로 접수하겠습니다.\n\n${tp} 관련 문의를 담당자에게 전달드리겠습니다.\n\n추가 문의사항이 있으시면 말씀해 주세요!`}
+  // 3) 짧은 입력 (1~2자)
+  if(q.replace(/\s/g,'').length<=2){
+    if(/^[네예응요]$/i.test(q.trim())){
+      if(cbCtx.awaiting)return'네! 연락 가능한 전화번호나 이메일을 남겨주시면 담당자가 연락드리겠습니다.';
+      return'네! 무엇을 도와드릴까요? 제품, 견적, 기술 상담 등 편하게 말씀해 주세요.';
+    }
+    return'조금 더 구체적으로 말씀해 주시겠어요?\n\n예: "컨트롤러 문의", "견적 받고 싶어요", "MOQ가 어떻게 되나요?"';
+  }
+  // 4) 문의/상담 요청
+  if(/문의|상담|알고\s?싶|궁금|질문/.test(ql)&&!/전화|번호/.test(ql)){
+    let tp='';for(const e of CB_KB){for(const k of e.k)if(ql.includes(k.toLowerCase())){tp=e.cat;cbCtx.lastTopic=e.id;cbCtx.lastCat=e.cat;break}if(tp)break}
+    cbCtx.awaiting=true;cbCtx.topic=tp||'일반';
+    if(tp)return`${tp} 관련 문의시군요! 담당자 연결을 도와드리겠습니다.\n\n연락 가능한 전화번호나 이메일을 남겨주시면 빠르게 회신드리겠습니다.`;
+    return'어떤 부분이 궁금하신가요?\n\n• 제품 사양/종류\n• 견적/가격\n• 맞춤 개발\n• MOQ/납기\n• A/S 기술지원';
+  }
+  // 5) "연락주세요" 등
+  if(/연락\s?주|콜백|전화\s?주|전화\s?해|연결\s?해|상담\s?원|사람/.test(ql)){
+    cbCtx.awaiting=true;cbCtx.topic=cbCtx.lastCat||'일반';
+    return'네, 담당자 연결을 도와드리겠습니다!\n\n연락 가능한 전화번호를 남겨주시면 영업시간 내에 연락드리겠습니다.';
+  }
+  // 6) 인사
+  if(/^(안녕|반갑|하이|hello|hi|헬로)/.test(ql))return'안녕하세요! 태승전자 고객지원 챗봇입니다 😊\n\n제품 문의, 견적 요청, 기술 상담 등 편하게 말씀해 주세요!';
+  // 7) 감사
+  if(/감사|고마|ㄱㅅ|thx|thanks|수고/.test(ql))return'도움이 되셨다면 기쁩니다! 😊\n추가 문의사항이 있으시면 언제든 말씀해 주세요.';
+  // 8) 불만
+  if(/별로|실망|아쉽|불편|화나|짜증|답답/.test(ql))return'불편을 드려 죄송합니다.\n구체적인 내용을 말씀해 주시거나 032-329-7600으로 직접 연락 주시면 빠르게 도와드리겠습니다.';
+  // 9) KB 매칭
+  let bs=0,be=null;for(const e of CB_KB){let sc=0;for(const k of e.k)if(ql.includes(k.toLowerCase()))sc+=1+(k.length>3?1:0);if(sc>0&&e.cat===cbCtx.lastCat)sc+=0.5;if(sc>bs){bs=sc;be=e}}
+  if(be&&bs>=1){cbCtx.lastTopic=be.id;cbCtx.lastCat=be.cat;let t=be.a;if(t===cbCtx.lastResp&&be.f)t=be.f;else if(be.f)t+='\n\n'+be.f;cbCtx.lastResp=be.a;return t}
+  // 10) 연락처 대기 중 숫자 입력
+  if(cbCtx.awaiting&&/\d{4,}/.test(q.replace(/[-.\s]/g,''))){
+    cbCtx.awaiting=false;const tp=cbCtx.topic||'제품';
+    return`감사합니다! 연락처를 확인했습니다.\n\n${tp} 관련 문의로 접수하겠습니다. 담당자가 영업시간 내에 연락드리겠습니다.`;
+  }
+  if(cbCtx.awaiting)return'문의 접수를 위해 연락 가능한 전화번호나 이메일을 알려주시겠어요?\n\n예: 010-1234-5678 또는 email@example.com';
+  // 11) 폴백
+  cbCtx.awaiting=true;cbCtx.topic='일반';
+  return'죄송합니다, 해당 내용에 대해 바로 답변드리기 어려운 부분이 있네요.\n\n담당자 연결을 도와드릴까요? 연락처를 남겨주시면 확인 후 연락드리겠습니다!\n\n또는 대표번호 032-329-7600으로 직접 문의도 가능합니다.';
+}
+function cbSend(){const inp=document.getElementById('cbInp');const q=inp.value.trim();if(!q)return;const tm=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});cbMsgs.push({r:'user',t:q,tm});inp.value='';cbRender();setTimeout(()=>{cbMsgs.push({r:'bot',t:cbFind(q),tm:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})});cbRender()},300+Math.random()*500)}
 function cbToggle(){cbOpen=!cbOpen;cbRender()}
 function cbRender(){
   let el=document.getElementById('chatbot');if(!el){el=document.createElement('div');el.id='chatbot';document.body.appendChild(el)}
@@ -970,7 +1026,8 @@ function cbRender(){
     </div>
     <div id="cbMsgArea" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px">${msgs}</div>
     <div style="padding:10px;border-top:1px solid rgba(255,255,255,.05);display:flex;gap:6px">
-      <input id="cbInp" placeholder="메시지를 입력하세요..." onkeydown="if(event.key==='Enter')cbSend()" style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 12px;color:#fff;font-size:12px;font-family:inherit;outline:none"/>
+      ${cbCtx.awaiting?'<div style="padding:0 10px 6px"><div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.15)"><span style="font-size:11px">📞</span><span style="font-size:10px;color:#7dd3fc">전화번호나 이메일을 입력하시면 문의 접수가 완료됩니다</span></div></div>':''}
+      <input id="cbInp" placeholder="${cbCtx.awaiting?'전화번호 또는 이메일을 입력하세요...':'메시지를 입력하세요...'}" onkeydown="if(event.key==='Enter')cbSend()" style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 12px;color:#fff;font-size:12px;font-family:inherit;outline:none"/>
       <button onclick="cbSend()" style="width:36px;height:36px;border-radius:10px;background:#38bdf8;border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">➤</button>
     </div>
   </div>`;
