@@ -927,6 +927,56 @@ import('https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js').then(appMod=
 }).then(()=>{console.log('✅ Firebase 연결 완료');fbLoad()}).catch(e=>console.error('Firebase init error:',e));
 
 document.addEventListener('click',e=>{const a=e.target.closest('a');if(a){const h=a.getAttribute('href');if(h&&!h.startsWith('javascript:')&&!h.startsWith('blob:')&&!h.startsWith('data:'))e.preventDefault()}},true);
+
+// ── 챗봇 ──
+const CB_KB=[
+{k:['회사','태승','소개','뭐하는','어떤'],a:'태승전자(주)는 1989년 설립된 마이크로컨트롤러 설계·제조 전문 기업입니다. 가전, 의료기기, 태양광 분야의 제어기판과 디스플레이 솔루션을 제공하고 있으며, 인천 로봇랜드에 최첨단 스마트팩토리를 운영하고 있습니다.'},
+{k:['설립','창립','역사','연혁'],a:'태승전자는 1989년에 설립되었습니다. 2000년 기업부설연구소 설립, 2003년 ISO 9001 인증, 2006년 ISO 14001 인증을 취득했으며, 2016년 인천 청라지구로 확장 이전했습니다.'},
+{k:['대표','CEO','사장'],a:'태승전자(주)의 대표이사는 유태호 사장님입니다.'},
+{k:['위치','주소','어디','오시는','찾아'],a:'인천광역시 서구 로봇랜드로 249번길 62-8\n\n🚗 경부고속도로 인천 I.C에서 로봇랜드 방향 약 5분\n🚌 인천역 앞 123번 버스 → 로봇랜드 하차\n🚇 인천 1호선 토성역 5번 출구 택시'},
+{k:['전화','연락','번호','문의','콜','전화번호'],a:'대표번호: 032-329-7600~7603\n팩스: 032-329-7604\n영업시간: 평일 09:00~18:00 (주말·공휴일 휴무)'},
+{k:['제품','상품','뭐 만','생산','판매'],a:'주요 제품:\n🔹 메인 컨트롤러 (MC 시리즈)\n🔹 디스플레이 패널 (LCD/LED/OLED/TFT)\n🔹 냉장고 제어기판\n🔹 식기건조기/환기시스템 제어기\n🔹 의료기기 MCU 보드\n🔹 태양광 인버터 제어기'},
+{k:['컨트롤러','MC','MCU','메인'],a:'메인 컨트롤러(MC 시리즈): 32/16/8-bit MCU, 5V~24V DC, UART/SPI/I2C 통신, -20°C~+70°C, ISO 9001/CE 인증, 3년 보증'},
+{k:['디스플레이','LCD','LED','OLED','TFT','패널'],a:'디스플레이 솔루션: LCD 7-Segment, LCD 16x2 Character, LCD 128x64 Graphic, LED Driver IC, TFT LCD Controller, OLED Controller'},
+{k:['의료','메디컬','의료기기'],a:'의료기기 MCU 보드: ARM Cortex-M4 기반, IEC 60601 규격 준수, 이중 안전회로 설계'},
+{k:['태양광','인버터','솔라'],a:'태양광 인버터 제어기: MPPT 99%+ 효율, 계통연계/독립형 전환, 원격 모니터링 지원'},
+{k:['맞춤','커스텀','주문','의뢰','개발'],a:'맞춤형 제어 시스템 개발 가능합니다! 30년 이상의 설계 노하우로 턴키 솔루션을 제공합니다.\n문의: 032-329-7600 (영업팀)'},
+{k:['인증','ISO','CE','KC','품질'],a:'보유 인증: ISO 9001:2015, ISO 14001:2015, CE Marking, KC Certification, KOITA 기업부설연구소, RoHS Compliance'},
+{k:['공장','시설','규모','스마트팩토리'],a:'인천 로봇랜드 스마트팩토리:\n📐 6,500m² | 🏭 SMT 3라인 | 📦 월 50만+ pcs | ⚙️ 가동률 96%+'},
+{k:['조직','부서','팀'],a:'조직: 대표이사(유태호), 영업팀, 연구소, 생산기술팀, 구매팀, 생산팀, 품질경영팀, 경영지원팀'},
+{k:['견적','가격','비용','얼마'],a:'견적은 수량·사양에 따라 다릅니다.\n📞 032-329-7600 (영업팀) 또는 홈페이지 문의 양식을 이용해 주세요.'},
+{k:['AS','A/S','수리','불량','보증'],a:'A/S: 032-329-7600 | 메인 컨트롤러 보증기간 3년 | 전문 엔지니어가 신속 대응'},
+{k:['납기','배송','리드타임'],a:'납기준수율 98%. 구체적 일정은 영업팀(032-329-7600)으로 문의해 주세요.'},
+{k:['카탈로그','자료','다운로드','데이터시트'],a:'홈페이지 고객센터 > 자료실에서 다운로드 가능합니다.'},
+{k:['공정','제조','SMT'],a:'11단계 공정: 자재입고→크림납인쇄→SMT→수삽입→자동납땜→목시검사→조립→ICT→프로그램→기능검사→포장출하\n불량률 50PPM 이하, 검사커버리지 100%'},
+];
+let cbOpen=false,cbMsgs=[{r:'bot',t:'안녕하세요! 태승전자 CS 챗봇입니다.\n제품, 견적, 기술 상담 등 무엇이든 물어보세요!',tm:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}];
+function cbFind(q){const ql=q.toLowerCase().replace(/[?.,!]/g,'');let bs=0,ba='';for(const i of CB_KB){let sc=0;for(const k of i.k)if(ql.includes(k.toLowerCase()))sc++;if(sc>bs){bs=sc;ba=i.a}}if(bs>0)return ba;if(/안녕|반갑|하이|hello|hi/i.test(ql))return'안녕하세요! 태승전자 고객지원 챗봇입니다 😊\n무엇을 도와드릴까요?';if(/감사|고마/i.test(ql))return'도움이 되셨다면 기쁩니다! 추가 문의사항이 있으시면 언제든 말씀해 주세요 😊';return'죄송합니다, 해당 내용은 정확히 답변드리기 어렵습니다.\n📞 032-329-7600~7603\n평일 09:00~18:00 상담 가능합니다.'}
+function cbSend(){const inp=document.getElementById('cbInp');const q=inp.value.trim();if(!q)return;const tm=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});cbMsgs.push({r:'user',t:q,tm});inp.value='';cbRender();setTimeout(()=>{cbMsgs.push({r:'bot',t:cbFind(q),tm:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})});cbRender()},400+Math.random()*400)}
+function cbToggle(){cbOpen=!cbOpen;cbRender()}
+function cbRender(){
+  let el=document.getElementById('chatbot');if(!el){el=document.createElement('div');el.id='chatbot';document.body.appendChild(el)}
+  if(!cbOpen){el.innerHTML=`<button onclick="cbToggle()" style="position:fixed;bottom:16px;right:16px;z-index:9999;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#818cf8);border:none;color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 15px rgba(56,189,248,.3);display:flex;align-items:center;justify-content:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">💬</button>`;return}
+  let msgs='';cbMsgs.forEach(m=>{
+    const isU=m.r==='user';
+    msgs+=`<div style="display:flex;gap:8px;${isU?'flex-direction:row-reverse':''}">
+      <div style="width:26px;height:26px;border-radius:50%;background:${isU?'rgba(255,255,255,.08)':'linear-gradient(135deg,#38bdf8,#818cf8)'};display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:2px">${isU?'👤':'🤖'}</div>
+      <div style="max-width:75%"><div style="display:inline-block;text-align:left;padding:8px 12px;border-radius:14px;${isU?'border-top-right-radius:4px;background:rgba(56,189,248,.15);color:#bae6fd':'border-top-left-radius:4px;background:rgba(255,255,255,.05);color:#d1d5db'};font-size:12px;line-height:1.6;white-space:pre-wrap">${m.t}</div><div style="font-size:8px;color:#444;margin-top:2px;${isU?'text-align:right':''}">${m.tm}</div></div></div>`;
+  });
+  el.innerHTML=`<div style="position:fixed;bottom:16px;right:16px;z-index:9999;width:340px;max-width:calc(100vw - 32px);height:480px;max-height:calc(100vh - 80px);border-radius:16px;background:#0a0a0a;border:1px solid rgba(255,255,255,.08);box-shadow:0 8px 32px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);background:linear-gradient(90deg,rgba(56,189,248,.08),rgba(129,140,248,.08))">
+      <div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#818cf8);display:flex;align-items:center;justify-content:center;font-size:14px">🤖</div><div><div style="font-size:12px;font-weight:700;color:#fff">태승전자 고객지원</div><div style="font-size:9px;color:#34d399;display:flex;align-items:center;gap:3px"><span style="width:5px;height:5px;border-radius:50%;background:#34d399;display:inline-block"></span>온라인</div></div></div>
+      <button onclick="cbToggle()" style="width:28px;height:28px;border-radius:6px;border:none;background:rgba(255,255,255,.03);color:#888;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div id="cbMsgArea" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px">${msgs}</div>
+    <div style="padding:10px;border-top:1px solid rgba(255,255,255,.05);display:flex;gap:6px">
+      <input id="cbInp" placeholder="메시지를 입력하세요..." onkeydown="if(event.key==='Enter')cbSend()" style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 12px;color:#fff;font-size:12px;font-family:inherit;outline:none"/>
+      <button onclick="cbSend()" style="width:36px;height:36px;border-radius:10px;background:#38bdf8;border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">➤</button>
+    </div>
+  </div>`;
+  const ma=document.getElementById('cbMsgArea');if(ma)ma.scrollTop=ma.scrollHeight;
+}
+cbRender();
 </script>
 </body>
 </html>
