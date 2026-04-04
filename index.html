@@ -250,8 +250,11 @@ textarea.edin{resize:vertical;min-height:36px}
 let fbUser=null;
 let fbdb=null;
 
+// 로그인 상태 복원 (localStorage)
+try{const saved=localStorage.getItem('tselec_admin_auth');if(saved){fbUser=JSON.parse(saved);setTimeout(()=>{const b=document.getElementById('fbAuthBtn');if(b)b.textContent='🔓 로그아웃 (관리자)'},100)}}catch(e){}
+
 function showLoginModal(){
-  if(fbUser){fbUser=null;R();const b=document.getElementById('fbAuthBtn');if(b)b.textContent='🔑 로그인';toast('로그아웃');return}
+  if(fbUser){fbUser=null;localStorage.removeItem('tselec_admin_auth');R();const b=document.getElementById('fbAuthBtn');if(b)b.textContent='🔑 로그인';toast('로그아웃');return}
   const m=document.createElement('div');m.id='loginModal';m.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999';
   m.innerHTML=`<div style="background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:28px;width:320px"><h3 style="color:#fff;margin:0 0 18px;font-size:16px;text-align:center">관리자 로그인</h3><div style="margin-bottom:12px"><label style="font-size:11px;color:#aaa;display:block;margin-bottom:4px">아이디</label><input id="loginId" style="width:100%;padding:10px;border:1px solid #444;border-radius:6px;background:#111;color:#fff;font-size:13px;box-sizing:border-box" placeholder="아이디 입력"/></div><div style="margin-bottom:18px"><label style="font-size:11px;color:#aaa;display:block;margin-bottom:4px">비밀번호</label><input id="loginPw" type="password" style="width:100%;padding:10px;border:1px solid #444;border-radius:6px;background:#111;color:#fff;font-size:13px;box-sizing:border-box" placeholder="비밀번호 입력"/></div><button onclick="doLogin()" style="width:100%;padding:10px;border:none;border-radius:6px;background:var(--ac);color:#fff;font-size:13px;font-weight:600;cursor:pointer">로그인</button><button onclick="document.getElementById('loginModal').remove()" style="width:100%;padding:8px;border:none;background:transparent;color:#888;font-size:11px;cursor:pointer;margin-top:6px">취소</button></div>`;
   document.body.appendChild(m);
@@ -260,7 +263,7 @@ function showLoginModal(){
 }
 function doLogin(){
   const id=document.getElementById('loginId').value,pw=document.getElementById('loginPw').value;
-  if(id==='tsadmin'&&pw==='admin'){fbUser={id:'tsadmin'};document.getElementById('loginModal').remove();const b=document.getElementById('fbAuthBtn');if(b)b.textContent='🔓 로그아웃 (관리자)';toast('로그인 성공');R()}
+  if(id==='tsadmin'&&pw==='admin'){fbUser={id:'tsadmin'};localStorage.setItem('tselec_admin_auth',JSON.stringify(fbUser));document.getElementById('loginModal').remove();const b=document.getElementById('fbAuthBtn');if(b)b.textContent='🔓 로그아웃 (관리자)';toast('로그인 성공');R()}
   else{toast('아이디 또는 비밀번호가 틀립니다')}
 }
 
@@ -921,7 +924,7 @@ function chatInqStatus(idx,st){
   const item=S.chatInquiries[idx];if(!item)return;
   item.status=st;
   const{doc,setDoc}=window._fb;
-  setDoc(doc(fbdb,'chatInquiries',item.id),{status:st},{merge:true}).then(()=>toast(st==='처리완료'?'처리 완료':'상태 변경')).catch(e=>console.error(e));
+  setDoc(doc(fbdb,'chatInquiries',item.id),{status:st},{merge:true}).then(()=>toast(st==='done'?'처리 완료':'상태 변경')).catch(e=>console.error(e));
   R();
 }
 function rChatInq(){
