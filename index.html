@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>TSelec Admin</title>
 <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-app-compat.js"></script>
-
+<script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-compat.js"></script>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
@@ -253,6 +253,7 @@ textarea.edin{resize:vertical;min-height:36px}
 const firebaseConfig={apiKey:"AIzaSyDmgOBu3kPUGzff_CyR647kIbN4F91seJE",authDomain:"gen-lang-client-0276589179.firebaseapp.com",projectId:"gen-lang-client-0276589179",storageBucket:"gen-lang-client-0276589179.firebasestorage.app",messagingSenderId:"746025368201",appId:"1:746025368201:web:0a89d91b9bf2aa60a36458"};
 firebase.initializeApp(firebaseConfig);
 const fbdb=firebase.app().firestore('ai-studio-e97c649f-c50c-4cd5-8952-6640d34f2444');
+firebase.auth().signInAnonymously().catch(e=>console.warn('Anonymous auth:',e.message));
 let fbUser=null;
 
 function showLoginModal(){
