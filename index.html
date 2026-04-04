@@ -253,8 +253,8 @@ textarea.edin{resize:vertical;min-height:36px}
 const firebaseConfig={apiKey:"AIzaSyDmgOBu3kPUGzff_CyR647kIbN4F91seJE",authDomain:"gen-lang-client-0276589179.firebaseapp.com",projectId:"gen-lang-client-0276589179",storageBucket:"gen-lang-client-0276589179.firebasestorage.app",messagingSenderId:"746025368201",appId:"1:746025368201:web:0a89d91b9bf2aa60a36458"};
 firebase.initializeApp(firebaseConfig);
 const fbdb=firebase.app().firestore('ai-studio-e97c649f-c50c-4cd5-8952-6640d34f2444');
-firebase.auth().signInAnonymously().catch(e=>console.warn('Anonymous auth:',e.message));
 let fbUser=null;
+firebase.auth().signInAnonymously().then(()=>{console.log('✅ Anonymous auth OK');if(typeof fbLoad==='function')fbLoad()}).catch(e=>console.warn('Anonymous auth:',e.message));
 
 function showLoginModal(){
   if(fbUser){fbUser=null;R();const b=document.getElementById('fbAuthBtn');if(b)b.textContent='🔑 로그인';toast('로그아웃');return}
@@ -834,7 +834,7 @@ function rInq(){return `<div style="max-width:700px;margin:0 auto">${S.inquiries
 function rSet(){return `<div style="max-width:440px;margin:0 auto"><div class="sc" style="padding:16px;margin-bottom:8px"><div style="font-size:12px;font-weight:700;margin-bottom:12px">일반</div><div class="fg"><label>사이트 제목</label><input value="태승전자(주) TSELEC"/></div><div class="fg"><label>비밀번호</label><input type="password" placeholder="새 비밀번호"/></div><button onclick="toast('저장')" style="width:100%;padding:8px;border:none;border-radius:6px;background:#fff;color:#000;font-size:11px;font-weight:600;font-family:inherit">저장</button></div><div class="sc" style="padding:16px"><div style="font-size:12px;font-weight:700;margin-bottom:8px">데이터</div><button onclick="exJ()" style="padding:6px 10px;border:1px solid var(--bd);border-radius:5px;background:rgba(255,255,255,.02);color:#888;font-size:9px;font-family:inherit">JSON 내보내기</button></div></div>`}
 function exJ(){const d=JSON.stringify({content:S.content,images:S.images,videos:S.videos,clients:S.clients,news:S.news,downloads:S.downloads},null,2);const b=new Blob([d],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='tselec-content.json';a.click();toast('JSON 다운로드')}
 
-R();fbLoad();
+R();
 document.addEventListener('click',e=>{const a=e.target.closest('a');if(a){const h=a.getAttribute('href');if(h&&!h.startsWith('javascript:')&&!h.startsWith('blob:')&&!h.startsWith('data:'))e.preventDefault()}},true);
 </script>
 </body>
