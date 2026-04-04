@@ -4,9 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>TSelec Admin</title>
-<script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-compat.js"></script>
+
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -249,12 +247,8 @@ textarea.edin{resize:vertical;min-height:36px}
 <div class="toast" id="toast">✓ <span id="toastMsg"></span></div><div id="modalR"></div>
 
 <script>
-// === Firebase Init ===
-const firebaseConfig={apiKey:"AIzaSyDmgOBu3kPUGzff_CyR647kIbN4F91seJE",authDomain:"gen-lang-client-0276589179.firebaseapp.com",projectId:"gen-lang-client-0276589179",storageBucket:"gen-lang-client-0276589179.firebasestorage.app",messagingSenderId:"746025368201",appId:"1:746025368201:web:0a89d91b9bf2aa60a36458"};
-firebase.initializeApp(firebaseConfig);
-const fbdb=firebase.app().firestore('ai-studio-e97c649f-c50c-4cd5-8952-6640d34f2444');
 let fbUser=null;
-firebase.auth().signInAnonymously().then(()=>{console.log('✅ Anonymous auth OK');if(typeof fbLoad==='function')fbLoad()}).catch(e=>console.warn('Anonymous auth:',e.message));
+let fbdb=null;
 
 function showLoginModal(){
   if(fbUser){fbUser=null;R();const b=document.getElementById('fbAuthBtn');if(b)b.textContent='🔑 로그인';toast('로그아웃');return}
@@ -272,39 +266,44 @@ function doLogin(){
 
 async function fbSave(){
   if(!fbUser){toast('로그인이 필요합니다');showLoginModal();return}
+  if(!fbdb){toast('데이터베이스 연결 중...');return}
   try{
-    await fbdb.collection('siteContent').doc('text').set(S.content);
-    await fbdb.collection('siteContent').doc('media').set({images:S.images,videos:S.videos});
-    await fbdb.collection('siteContent').doc('clients').set({list:S.clients});
+    const{doc,setDoc}=window._fb;
+    await setDoc(doc(fbdb,'siteContent','text'),S.content);
+    await setDoc(doc(fbdb,'siteContent','media'),{images:S.images,videos:S.videos});
+    await setDoc(doc(fbdb,'siteContent','clients'),{list:S.clients});
     toast('🔥 Firebase 저장 완료');
   }catch(e){toast('저장 실패: '+e.message);console.error(e)}
 }
 
 async function fbSaveNews(item,isNew){
-  if(!fbUser)return;
+  if(!fbUser||!fbdb)return;
   try{
-    const data={category:item.cat,title:item.title,content:item.content,author:item.author||'관리자',views:item.views||0,isNew:item.isNew||false,createdAt:isNew?firebase.firestore.Timestamp.now():(item._ts||firebase.firestore.Timestamp.now())};
-    if(isNew){const ref=await fbdb.collection('news').add(data);item.id=ref.id}
-    else{await fbdb.collection('news').doc(item.id).set(data)}
+    const{doc,setDoc,addDoc,collection,Timestamp}=window._fb;
+    const data={category:item.cat,title:item.title,content:item.content,author:item.author||'관리자',views:item.views||0,isNew:item.isNew||false,createdAt:isNew?Timestamp.now():(item._ts||Timestamp.now())};
+    if(isNew){const ref=await addDoc(collection(fbdb,'news'),data);item.id=ref.id}
+    else{await setDoc(doc(fbdb,'news',item.id),data)}
   }catch(e){console.error('뉴스 저장 실패:',e)}
 }
 
 async function fbDeleteNews(id){
-  if(!fbUser)return;
-  try{await fbdb.collection('news').doc(id).delete()}catch(e){console.error(e)}
+  if(!fbUser||!fbdb)return;
+  try{const{doc,deleteDoc}=window._fb;await deleteDoc(doc(fbdb,'news',id))}catch(e){console.error(e)}
 }
 
 async function fbLoad(){
+  if(!fbdb)return;
   try{
-    const textDoc=await fbdb.collection('siteContent').doc('text').get();
-    if(textDoc.exists)Object.assign(S.content,textDoc.data());
-    const mediaDoc=await fbdb.collection('siteContent').doc('media').get();
-    if(mediaDoc.exists){const md=mediaDoc.data();if(md.images)Object.assign(S.images,md.images);if(md.videos)Object.assign(S.videos,md.videos)}
-    const clientDoc=await fbdb.collection('siteContent').doc('clients').get();
-    if(clientDoc.exists&&clientDoc.data().list)S.clients=clientDoc.data().list;
-    const newsSnap=await fbdb.collection('news').orderBy('createdAt','desc').get();
+    const{doc,getDoc,collection,getDocs,query,orderBy}=window._fb;
+    const textDoc=await getDoc(doc(fbdb,'siteContent','text'));
+    if(textDoc.exists())Object.assign(S.content,textDoc.data());
+    const mediaDoc=await getDoc(doc(fbdb,'siteContent','media'));
+    if(mediaDoc.exists()){const md=mediaDoc.data();if(md.images)Object.assign(S.images,md.images);if(md.videos)Object.assign(S.videos,md.videos)}
+    const clientDoc=await getDoc(doc(fbdb,'siteContent','clients'));
+    if(clientDoc.exists()&&clientDoc.data().list)S.clients=clientDoc.data().list;
+    const newsSnap=await getDocs(query(collection(fbdb,'news'),orderBy('createdAt','desc')));
     if(!newsSnap.empty)S.news=newsSnap.docs.map(d=>{const x=d.data();return{id:d.id,cat:x.category||'',title:x.title||'',content:x.content||'',date:x.createdAt&&x.createdAt.toDate?x.createdAt.toDate().toISOString().split('T')[0].replace(/-/g,'.'):(''),author:x.author||'관리자',views:x.views||0,isNew:x.isNew||false,_ts:x.createdAt}});
-    const inqSnap=await fbdb.collection('inquiries').orderBy('createdAt','desc').get();
+    const inqSnap=await getDocs(query(collection(fbdb,'inquiries'),orderBy('createdAt','desc')));
     if(!inqSnap.empty)S.inquiries=inqSnap.docs.map(d=>{const x=d.data();return{id:d.id,nm:x.name||x.nm||'',co:x.company||x.co||'',msg:x.message||x.msg||'',date:x.createdAt&&x.createdAt.toDate?x.createdAt.toDate().toISOString().split('T')[0]:'',st:x.status==='pending'?'new':(x.status||x.st||'new')}});
     R();console.log('✅ Firebase 데이터 로드 완료');
   }catch(e){console.warn('Firebase 로드 실패 (기본값 사용):',e.message)}
@@ -835,6 +834,21 @@ function rSet(){return `<div style="max-width:440px;margin:0 auto"><div class="s
 function exJ(){const d=JSON.stringify({content:S.content,images:S.images,videos:S.videos,clients:S.clients,news:S.news,downloads:S.downloads},null,2);const b=new Blob([d],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='tselec-content.json';a.click();toast('JSON 다운로드')}
 
 R();
+
+// === Firebase Modular SDK Init ===
+import('https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js').then(appMod=>{
+  return Promise.all([
+    import('https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js'),
+    import('https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js')
+  ]).then(([authMod,fsMod])=>{
+    const app=appMod.initializeApp({apiKey:'AIzaSyDmgOBu3kPUGzff_CyR647kIbN4F91seJE',authDomain:'gen-lang-client-0276589179.firebaseapp.com',projectId:'gen-lang-client-0276589179',storageBucket:'gen-lang-client-0276589179.firebasestorage.app',messagingSenderId:'746025368201',appId:'1:746025368201:web:0a89d91b9bf2aa60a36458'});
+    const auth=authMod.getAuth(app);
+    fbdb=fsMod.getFirestore(app,'ai-studio-e97c649f-c50c-4cd5-8952-6640d34f2444');
+    window._fb={doc:fsMod.doc,setDoc:fsMod.setDoc,getDoc:fsMod.getDoc,collection:fsMod.collection,getDocs:fsMod.getDocs,addDoc:fsMod.addDoc,deleteDoc:fsMod.deleteDoc,query:fsMod.query,orderBy:fsMod.orderBy,Timestamp:fsMod.Timestamp};
+    return authMod.signInAnonymously(auth);
+  });
+}).then(()=>{console.log('✅ Firebase 연결 완료');fbLoad()}).catch(e=>console.error('Firebase init error:',e));
+
 document.addEventListener('click',e=>{const a=e.target.closest('a');if(a){const h=a.getAttribute('href');if(h&&!h.startsWith('javascript:')&&!h.startsWith('blob:')&&!h.startsWith('data:'))e.preventDefault()}},true);
 </script>
 </body>
