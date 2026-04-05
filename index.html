@@ -423,18 +423,32 @@ const PAGES={
     {n:'제품 카드',f:['pp-0t','pp-0d','pp-1t','pp-1d','pp-2t','pp-2d','pp-3t','pp-3d','pp-4t','pp-4d','pp-5t','pp-5d'],i:['pp-img0','pp-img1','pp-img2','pp-img3','pp-img4','pp-img5']},
     {n:'제품 모달 상세 (카드 클릭시 팝업)',f:['pp-0m-spec','pp-0m-feat','pp-1m-spec','pp-1m-feat','pp-2m-spec','pp-2m-feat','pp-3m-spec','pp-3m-feat','pp-4m-spec','pp-4m-feat','pp-5m-spec','pp-5m-feat']},
   ]},
-  mainctrl:{name:'메인 컨트롤러',secs:[
+  mainctrl:{name:'의료기기 MCU',secs:[
     {n:'페이지 헤더',f:['mc-badge','mc-t1','mc-t2','mc-d1','mc-d2']},
     {n:'사양',f:['mc-sp0l','mc-sp0v','mc-sp1l','mc-sp1v','mc-sp2l','mc-sp2v','mc-sp3l','mc-sp3v','mc-sp4l','mc-sp4v','mc-sp5l','mc-sp5v','mc-sp6l','mc-sp6v','mc-sp7l','mc-sp7v'],i:['mc-img0']},
   ]},
-  display:{name:'디스플레이',secs:[
+  display:{name:'가전 디스플레이',secs:[
     {n:'페이지 헤더',f:['dp-badge','dp-t1','dp-t2','dp-d1','dp-d2']},
     {n:'디스플레이 종류',f:['dp-0t','dp-0d','dp-1t','dp-1d','dp-2t','dp-2d','dp-3t','dp-3d','dp-4t','dp-4d','dp-5t','dp-5d'],i:['dp-img0','dp-img1','dp-img2','dp-img3','dp-img4','dp-img5']},
   ]},
-  others:{name:'기타 솔루션',secs:[
-    {n:'페이지 헤더',f:['ot-badge','ot-t1','ot-t2','ot-d1','ot-d2']},
-    {n:'사양',f:['ot-sp0','ot-sp1','ot-sp2','ot-sp3','ot-sp4','ot-sp5']},
-    {n:'적용 분야',f:['ot-a0t','ot-a0d','ot-a1t','ot-a1d','ot-a2t','ot-a2d','ot-a3t','ot-a3d']},
+  solar:{name:'태양광 인버터',secs:[
+    {n:'페이지 헤더',f:['sl-badge','sl-t1','sl-t2','sl-d1','sl-d2']},
+    {n:'사양',f:['sl-sp0l','sl-sp0v','sl-sp1l','sl-sp1v','sl-sp2l','sl-sp2v','sl-sp3l','sl-sp3v','sl-sp4l','sl-sp4v','sl-sp5l','sl-sp5v'],i:['sl-img0']},
+    {n:'적용 분야',f:['sl-a0t','sl-a0d','sl-a1t','sl-a1d','sl-a2t','sl-a2d']},
+  ]},
+  dispmodule:{name:'디스플레이 모듈',secs:[
+    {n:'페이지 헤더',f:['dm-badge','dm-t1','dm-t2','dm-d1','dm-d2']},
+    {n:'모듈 종류',f:['dm-0t','dm-0d','dm-1t','dm-1d','dm-2t','dm-2d','dm-3t','dm-3d','dm-4t','dm-4d','dm-5t','dm-5d'],i:['dm-img0','dm-img1','dm-img2','dm-img3','dm-img4','dm-img5']},
+  ]},
+  tempctrl:{name:'디지털 온도제어기',secs:[
+    {n:'페이지 헤더',f:['tc-badge','tc-t1','tc-t2','tc-d1','tc-d2']},
+    {n:'사양',f:['tc-sp0l','tc-sp0v','tc-sp1l','tc-sp1v','tc-sp2l','tc-sp2v','tc-sp3l','tc-sp3v','tc-sp4l','tc-sp4v','tc-sp5l','tc-sp5v'],i:['tc-img0']},
+    {n:'적용 분야',f:['tc-a0t','tc-a0d','tc-a1t','tc-a1d','tc-a2t','tc-a2d','tc-a3t','tc-a3d']},
+  ]},
+  iot:{name:'IoT 스마트제어',secs:[
+    {n:'페이지 헤더',f:['io-badge','io-t1','io-t2','io-d1','io-d2']},
+    {n:'사양',f:['io-sp0l','io-sp0v','io-sp1l','io-sp1v','io-sp2l','io-sp2v','io-sp3l','io-sp3v','io-sp4l','io-sp4v','io-sp5l','io-sp5v','io-sp6l','io-sp6v','io-sp7l','io-sp7v'],i:['io-img0']},
+    {n:'기능',f:['io-f0t','io-f0d','io-f1t','io-f1d','io-f2t','io-f2d','io-f3t','io-f3d']},
   ]},
   process:{name:'공정도',secs:[
     {n:'페이지 헤더',f:['pr-badge','pr-t1','pr-t2']},
@@ -560,9 +574,9 @@ function rFieldList(pg){
 }
 
 // ─── LIVE PREVIEW for sub-pages ───
+function H(b,t1,t2,d1,d2){return `<div class="ws" style="text-align:center;padding:72px 24px 56px;position:relative"><div class="slbl">헤더</div><div style="display:inline-block;padding:6px 16px;border-radius:99px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);font-size:10px;font-weight:600;letter-spacing:.2em;color:#aaa;text-transform:uppercase;margin-bottom:24px">${E(b)}</div><br/><div style="font-size:clamp(30px,5.5vw,60px);font-weight:700;letter-spacing:-.04em;line-height:1.1">${E(t1)}</div><div style="font-size:clamp(30px,5.5vw,60px);font-weight:700;letter-spacing:-.04em;line-height:1.1;background:linear-gradient(to right,#e5e7eb,#6b7280);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:28px">${E(t2)}</div>${d1?`<div style="font-size:17px;color:#9ca3af;font-weight:300">${E(d1)}</div>`:``}${d2?`<div style="font-size:17px;color:#9ca3af;font-weight:300">${E(d2)}</div>`:``}</div>`}
 function rLiveSub(pg){
   const c=S.edit?'editing':'';
-  function H(b,t1,t2,d1,d2){return `<div class="ws" style="text-align:center;padding:72px 24px 56px;position:relative"><div class="slbl">헤더</div><div style="display:inline-block;padding:6px 16px;border-radius:99px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);font-size:10px;font-weight:600;letter-spacing:.2em;color:#aaa;text-transform:uppercase;margin-bottom:24px">${E(b)}</div><br/><div style="font-size:clamp(30px,5.5vw,60px);font-weight:700;letter-spacing:-.04em;line-height:1.1">${E(t1)}</div><div style="font-size:clamp(30px,5.5vw,60px);font-weight:700;letter-spacing:-.04em;line-height:1.1;background:linear-gradient(to right,#e5e7eb,#6b7280);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:28px">${E(t2)}</div>${d1?`<div style="font-size:17px;color:#9ca3af;font-weight:300">${E(d1)}</div>`:``}${d2?`<div style="font-size:17px;color:#9ca3af;font-weight:300">${E(d2)}</div>`:``}</div>`}
   let h=`<div class="lv ${c}">`;
   switch(S.page){
   case 'greeting':
@@ -592,25 +606,14 @@ function rLiveSub(pg){
     h+=H('dr-badge','dr-t1','dr-t2','dr-d1','dr-d2');
     h+=`<div class="ws" style="max-width:1200px;margin:0 auto;padding:0 24px 72px;position:relative"><div class="slbl">주소/교통</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:40px"><div style="display:flex;flex-direction:column;gap:24px"><div style="background:#0a0a0a;border:1px solid rgba(255,255,255,.05);border-radius:32px;padding:36px"><div style="color:#9ca3af;font-weight:500;letter-spacing:.15em;text-transform:uppercase;font-size:11px;margin-bottom:10px">회사주소</div><div style="font-size:20px;font-weight:700;line-height:1.4">${E('dr-addr')}</div><div style="font-size:15px;color:#6b7280;margin-top:3px">${E('dr-addr2')}</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:24px"><div style="background:#0a0a0a;border:1px solid rgba(255,255,255,.05);border-radius:32px;padding:28px"><div style="color:#9ca3af;font-weight:500;letter-spacing:.15em;text-transform:uppercase;font-size:10px;margin-bottom:10px">전화</div><div style="font-size:18px;font-weight:700;margin-bottom:3px">${E('dr-tel')}</div><div style="font-size:12px;color:#6b7280">${E('dr-tel-d')}</div></div><div style="background:#0a0a0a;border:1px solid rgba(255,255,255,.05);border-radius:32px;padding:28px"><div style="color:#9ca3af;font-weight:500;letter-spacing:.15em;text-transform:uppercase;font-size:10px;margin-bottom:10px">팩스</div><div style="font-size:18px;font-weight:700;margin-bottom:3px">${E('dr-fax')}</div><div style="font-size:12px;color:#6b7280">${E('dr-fax-d')}</div></div></div><div style="background:#0a0a0a;border:1px solid rgba(255,255,255,.05);border-radius:32px;padding:36px"><div style="font-size:17px;font-weight:700;margin-bottom:24px">${E('dr-tr-t')}</div><div style="display:flex;flex-direction:column;gap:16px;color:#9ca3af;font-weight:300;font-size:13px;line-height:1.6"><div><strong style="color:#fff;font-weight:500;display:inline-block;width:56px">${E('dr-car')}</strong> ${E('dr-car-d')}</div><div><strong style="color:#fff;font-weight:500;display:inline-block;width:56px">${E('dr-bus')}</strong> ${E('dr-bus-d')}</div><div><strong style="color:#fff;font-weight:500;display:inline-block;width:56px">${E('dr-sub')}</strong> ${E('dr-sub-d')}</div></div></div></div><div style="border-radius:24px;overflow:hidden;border:1px solid rgba(255,255,255,.1);background:#1a1a1a;display:flex;align-items:center;justify-content:center;min-height:400px"><div style="text-align:center;color:#555;font-size:12px">📍 지도 영역</div></div></div></div>`;
     break;
-  case 'products':
+  case 'products':{
+    const ppLink=['display','mainctrl','solar','dispmodule','tempctrl','iot'];
     h+=H('pp-badge','pp-t1','pp-t2','pp-d1','pp-d2');
-    h+=`<div class="ws" style="max-width:1200px;margin:0 auto;padding:0 24px 72px;position:relative"><div class="slbl">제품카드</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">${[0,1,2,3,4,5].map(i=>`<div style="position:relative;height:400px;border-radius:32px;overflow:hidden;background:#0a0a0a;border:1px solid rgba(255,255,255,.05);display:flex;flex-direction:column"><div style="padding:28px;z-index:10;position:relative"><div style="font-size:24px;font-weight:700;margin-bottom:6px">${E('pp-'+i+'t')}</div><div style="font-size:12px;color:#9ca3af;font-weight:300;line-height:1.5;max-width:80%">${E('pp-'+i+'d')}</div></div><div style="position:absolute;inset:0;top:33%;overflow:hidden;border-radius:0 0 32px 32px;z-index:3">${EI('pp-img'+i)}</div><div style="position:absolute;inset:0;top:33%;background:linear-gradient(to top,rgba(0,0,0,.8),rgba(0,0,0,.2));pointer-events:none;z-index:4;border-radius:0 0 32px 32px"></div></div>`).join('')}</div></div>`;
-    break;
-  case 'mainctrl':
-    h+=H('mc-badge','mc-t1','mc-t2','mc-d1','mc-d2');
-    h+=`<div style="display:flex;justify-content:center;margin-bottom:40px"><div style="display:inline-flex;background:#111;border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:5px;gap:3px"><span style="padding:9px 20px;border-radius:99px;font-size:12px;color:#9ca3af">전체보기</span><span style="padding:9px 20px;border-radius:99px;font-size:12px;background:#fff;color:#000;font-weight:500">메인 컨트롤러</span><span style="padding:9px 20px;border-radius:99px;font-size:12px;color:#9ca3af">디스플레이</span><span style="padding:9px 20px;border-radius:99px;font-size:12px;color:#9ca3af">기타</span></div></div>`;
-    h+=`<div class="ws" style="max-width:1200px;margin:0 auto;padding:0 24px 56px;position:relative"><div class="slbl">제품 상세</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center"><div style="border-radius:32px;background:#0a0a0a;border:1px solid rgba(255,255,255,.05);padding:24px;aspect-ratio:1;overflow:hidden;position:relative">${EI('mc-img0')}</div><div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">${[0,1,2,3,4,5,6,7].map(i=>`<div style="background:#0a0a0a;border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:18px"><div style="font-size:13px;font-weight:600;margin-bottom:4px">${E('mc-sp'+i+'l')}</div><div style="font-size:12px;color:#6b7280;font-weight:300">${E('mc-sp'+i+'v')}</div></div>`).join('')}</div></div></div></div>`;
-    break;
-  case 'display':
-    h+=H('dp-badge','dp-t1','dp-t2','dp-d1','dp-d2');
-    h+=`<div style="display:flex;justify-content:center;margin-bottom:40px"><div style="display:inline-flex;background:#111;border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:5px;gap:3px"><span style="padding:9px 20px;border-radius:99px;font-size:12px;color:#9ca3af">전체보기</span><span style="padding:9px 20px;border-radius:99px;font-size:12px;color:#9ca3af">메인 컨트롤러</span><span style="padding:9px 20px;border-radius:99px;font-size:12px;background:#fff;color:#000;font-weight:500">디스플레이</span><span style="padding:9px 20px;border-radius:99px;font-size:12px;color:#9ca3af">기타</span></div></div>`;
-    h+=`<div class="ws" style="max-width:1200px;margin:0 auto;padding:0 24px 72px;position:relative"><div class="slbl">디스플레이 종류</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">${[0,1,2,3,4,5].map(i=>`<div style="position:relative;height:360px;border-radius:32px;overflow:hidden;background:#0a0a0a;border:1px solid rgba(255,255,255,.05)"><div style="padding:24px;z-index:10;position:relative"><div style="font-size:20px;font-weight:700;margin-bottom:4px">${E('dp-'+i+'t')}</div><div style="font-size:12px;color:#9ca3af;font-weight:300">${E('dp-'+i+'d')}</div></div><div style="position:absolute;inset:0;top:25%;overflow:hidden;z-index:3">${EI('dp-img'+i)}</div><div style="position:absolute;inset:0;top:25%;background:linear-gradient(to top,rgba(0,0,0,.8),rgba(0,0,0,.2));pointer-events:none;z-index:4"></div></div>`).join('')}</div></div>`;
-    break;
-  case 'others':
-    h+=H('ot-badge','ot-t1','ot-t2','ot-d1','ot-d2');
-    h+=`<div style="display:flex;justify-content:center;margin-bottom:40px"><div style="display:inline-flex;background:#111;border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:5px;gap:3px"><span style="padding:9px 20px;border-radius:99px;font-size:12px;color:#9ca3af">전체보기</span><span style="padding:9px 20px;border-radius:99px;font-size:12px;color:#9ca3af">메인 컨트롤러</span><span style="padding:9px 20px;border-radius:99px;font-size:12px;color:#9ca3af">디스플레이</span><span style="padding:9px 20px;border-radius:99px;font-size:12px;background:#fff;color:#000;font-weight:500">기타 솔루션</span></div></div>`;
-    h+=`<div class="ws" style="max-width:1200px;margin:0 auto;padding:0 24px 56px;position:relative"><div class="slbl">사양</div><div style="background:#0a0a0a;border:1px solid rgba(255,255,255,.05);border-radius:22px;overflow:hidden">${[0,1,2,3,4,5].map(i=>`<div style="display:flex;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(255,255,255,.04);font-size:14px"><span>${E('ot-sp'+i)}</span></div>`).join('')}</div></div>`;
-    h+=`<div class="ws" style="max-width:1200px;margin:0 auto;padding:0 24px 72px;position:relative"><div class="slbl">적용분야</div><div style="background:#0a0a0a;border:1px solid rgba(255,255,255,.05);border-radius:32px;padding:36px 48px"><div style="text-align:center;font-size:24px;font-weight:700;margin-bottom:40px">적용 분야</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px">${[0,1,2,3].map(i=>`<div style="background:#111;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:24px"><div style="width:40px;height:40px;border-radius:50%;background:#dc2626;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;margin-bottom:16px">${i+1}</div><div style="font-size:16px;font-weight:700;margin-bottom:10px">${E('ot-a'+i+'t')}</div><div style="font-size:12px;color:#9ca3af;font-weight:300;line-height:1.5">${E('ot-a'+i+'d')}</div></div>`).join('')}</div></div></div>`;
+    h+=prdNav('products');
+    h+=`<div class="ws" style="max-width:1200px;margin:0 auto;padding:0 24px 72px;position:relative"><div class="slbl">제품카드</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">${[0,1,2,3,4,5].map(i=>`<div style="position:relative;height:400px;border-radius:32px;overflow:hidden;background:#0a0a0a;border:1px solid rgba(255,255,255,.05);display:flex;flex-direction:column;cursor:pointer" onclick="sp('${ppLink[i]}')"><div style="padding:28px;z-index:10;position:relative"><div style="font-size:24px;font-weight:700;margin-bottom:6px">${E('pp-'+i+'t')}</div><div style="font-size:12px;color:#9ca3af;font-weight:300;line-height:1.5;max-width:80%">${E('pp-'+i+'d')}</div></div><div style="position:absolute;inset:0;top:33%;overflow:hidden;border-radius:0 0 32px 32px;z-index:3">${EI('pp-img'+i)}</div><div style="position:absolute;inset:0;top:33%;background:linear-gradient(to top,rgba(0,0,0,.8),rgba(0,0,0,.2));pointer-events:none;z-index:4;border-radius:0 0 32px 32px"></div></div>`).join('')}</div></div>`;
+    } break;
+  case 'mainctrl':case 'display':case 'solar':case 'dispmodule':case 'tempctrl':case 'iot':
+    h+=prdSubPage(S.page);
     break;
   case 'process':
     h+=H('pr-badge','pr-t1','pr-t2','','');
@@ -619,6 +622,37 @@ function rLiveSub(pg){
     break;
   default:h+=`<div style="padding:40px;text-align:center;color:#555">프리뷰 준비 중</div>`;}
   h+=`</div>`;return h;
+}
+
+// ─── PRODUCT SUB-PAGE shared renderer ───
+const PRD_CATS=[
+  {id:'products',lb:'전체보기'},
+  {id:'display',lb:'가전 디스플레이'},
+  {id:'mainctrl',lb:'의료기기 MCU'},
+  {id:'solar',lb:'태양광 인버터'},
+  {id:'dispmodule',lb:'디스플레이 모듈'},
+  {id:'tempctrl',lb:'디지털 온도제어기'},
+  {id:'iot',lb:'IoT 스마트제어'},
+];
+function prdNav(cur){return `<div style="display:flex;justify-content:center;margin-bottom:40px"><div style="display:inline-flex;flex-wrap:wrap;justify-content:center;background:#111;border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:5px;gap:3px">${PRD_CATS.map(c=>`<span style="padding:9px 16px;border-radius:99px;font-size:11px;cursor:pointer;white-space:nowrap;${c.id===cur?'background:#fff;color:#000;font-weight:500':'color:#9ca3af'}" onclick="sp('${c.id}')">${c.lb}</span>`).join('')}</div></div>`}
+function prdSubPage(pg){
+  const cfg={
+    mainctrl:{badge:'mc-badge',t1:'mc-t1',t2:'mc-t2',d1:'mc-d1',d2:'mc-d2',type:'spec',img:'mc-img0',pre:'mc-sp',cnt:8,secLbl:'사양'},
+    display:{badge:'dp-badge',t1:'dp-t1',t2:'dp-t2',d1:'dp-d1',d2:'dp-d2',type:'cards',pre:'dp-',cnt:6,imgPre:'dp-img',secLbl:'디스플레이 종류'},
+    solar:{badge:'sl-badge',t1:'sl-t1',t2:'sl-t2',d1:'sl-d1',d2:'sl-d2',type:'spec',img:'sl-img0',pre:'sl-sp',cnt:6,secLbl:'사양',app:'sl-a',appCnt:3},
+    dispmodule:{badge:'dm-badge',t1:'dm-t1',t2:'dm-t2',d1:'dm-d1',d2:'dm-d2',type:'cards',pre:'dm-',cnt:6,imgPre:'dm-img',secLbl:'모듈 종류'},
+    tempctrl:{badge:'tc-badge',t1:'tc-t1',t2:'tc-t2',d1:'tc-d1',d2:'tc-d2',type:'spec',img:'tc-img0',pre:'tc-sp',cnt:6,secLbl:'사양',app:'tc-a',appCnt:4},
+    iot:{badge:'io-badge',t1:'io-t1',t2:'io-t2',d1:'io-d1',d2:'io-d2',type:'spec',img:'io-img0',pre:'io-sp',cnt:8,secLbl:'사양',app:'io-f',appCnt:4,appLbl:'기능'},
+  }[pg];if(!cfg)return '';
+  let o=H(cfg.badge,cfg.t1,cfg.t2,cfg.d1,cfg.d2);
+  o+=prdNav(pg);
+  if(cfg.type==='spec'){
+    o+=`<div class="ws" style="max-width:1200px;margin:0 auto;padding:0 24px 56px;position:relative"><div class="slbl">${cfg.secLbl}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center"><div style="border-radius:32px;background:#0a0a0a;border:1px solid rgba(255,255,255,.05);padding:24px;aspect-ratio:1;overflow:hidden;position:relative">${EI(cfg.img)}</div><div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">${Array.from({length:cfg.cnt},(_,i)=>`<div style="background:#0a0a0a;border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:18px"><div style="font-size:13px;font-weight:600;margin-bottom:4px">${E(cfg.pre+i+'l')}</div><div style="font-size:12px;color:#6b7280;font-weight:300">${E(cfg.pre+i+'v')}</div></div>`).join('')}</div></div></div></div>`;
+    if(cfg.app){o+=`<div class="ws" style="max-width:1200px;margin:0 auto;padding:0 24px 72px;position:relative"><div class="slbl">${cfg.appLbl||'적용 분야'}</div><div style="background:#0a0a0a;border:1px solid rgba(255,255,255,.05);border-radius:32px;padding:36px 48px"><div style="text-align:center;font-size:24px;font-weight:700;margin-bottom:40px">${cfg.appLbl||'적용 분야'}</div><div style="display:grid;grid-template-columns:repeat(${cfg.appCnt},1fr);gap:24px">${Array.from({length:cfg.appCnt},(_,i)=>`<div style="background:#111;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:24px"><div style="width:40px;height:40px;border-radius:50%;background:#dc2626;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;margin-bottom:16px">${i+1}</div><div style="font-size:16px;font-weight:700;margin-bottom:10px">${E(cfg.app+i+'t')}</div><div style="font-size:12px;color:#9ca3af;font-weight:300;line-height:1.5">${E(cfg.app+i+'d')}</div></div>`).join('')}</div></div></div>`}
+  } else {
+    o+=`<div class="ws" style="max-width:1200px;margin:0 auto;padding:0 24px 72px;position:relative"><div class="slbl">${cfg.secLbl}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">${Array.from({length:cfg.cnt},(_,i)=>`<div style="position:relative;height:360px;border-radius:32px;overflow:hidden;background:#0a0a0a;border:1px solid rgba(255,255,255,.05)"><div style="padding:24px;z-index:10;position:relative"><div style="font-size:20px;font-weight:700;margin-bottom:4px">${E(cfg.pre+i+'t')}</div><div style="font-size:12px;color:#9ca3af;font-weight:300">${E(cfg.pre+i+'d')}</div></div><div style="position:absolute;inset:0;top:25%;overflow:hidden;z-index:3">${EI(cfg.imgPre+i)}</div><div style="position:absolute;inset:0;top:25%;background:linear-gradient(to top,rgba(0,0,0,.8),rgba(0,0,0,.2));pointer-events:none;z-index:4"></div></div>`).join('')}</div></div>`;
+  }
+  return o;
 }
 
 function rLiveHome(){
