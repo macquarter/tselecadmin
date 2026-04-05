@@ -987,8 +987,8 @@ function rInq(){
           <label style="display:block;font-size:10px;color:var(--tx3);font-weight:600;margin-bottom:6px">답변 입력</label>
           <textarea style="width:100%;padding:10px;background:var(--inp-bg);border:1px solid var(--bd);border-radius:7px;color:var(--tx);font-family:inherit;font-size:11px;resize:vertical;height:80px" placeholder="고객 문의에 대한 답변을 입력하세요..." onchange="if(!S.inqOpt.replyText)S.inqOpt.replyText={};S.inqOpt.replyText['${openItem.id}']=this.value">${opt.replyText[openItem.id]||''}</textarea>
           <div style="display:flex;gap:6px;margin-top:10px">
-            <button onclick="S.inquiries[S.inquiries.indexOf(openItem)].st='pending';updateInqStatus('${openItem.id}','pending');toast('상태: 진행중');R()" style="flex:1;padding:8px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.15);border-radius:7px;color:var(--am);font-size:10px;font-weight:600;font-family:inherit">진행중</button>
-            <button onclick="S.inquiries[S.inquiries.indexOf(openItem)].st='replied';updateInqStatus('${openItem.id}','replied');toast('상태: 답변완료');R()" style="flex:1;padding:8px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.15);border-radius:7px;color:var(--gn);font-size:10px;font-weight:600;font-family:inherit">답변 완료</button>
+            <button onclick="var _i=S.inquiries.find(x=>x.id==='${openItem.id}');if(_i)_i.st='pending';updateInqStatus('${openItem.id}','pending');toast('상태: 진행중');R()" style="flex:1;padding:8px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.15);border-radius:7px;color:var(--am);font-size:10px;font-weight:600;font-family:inherit">진행중</button>
+            <button onclick="var _i=S.inquiries.find(x=>x.id==='${openItem.id}');if(_i)_i.st='replied';updateInqStatus('${openItem.id}','replied');toast('상태: 답변완료');R()" style="flex:1;padding:8px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.15);border-radius:7px;color:var(--gn);font-size:10px;font-weight:600;font-family:inherit">답변 완료</button>
           </div>
         </div>
       </div>
@@ -1035,7 +1035,7 @@ function rChat(){
         </div>
         <div style="padding:24px 28px;border-top:1px solid var(--bd)">
           <div style="display:flex;gap:6px">
-            <button onclick="S.chatInquiries[S.chatInquiries.indexOf(openItem)].st='replied';updateChatStatus('${openItem.id}','replied');S.chatOpt.openId=null;toast('응답완료 처리됨');R()" style="flex:1;padding:10px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.15);border-radius:7px;color:var(--gn);font-size:11px;font-weight:600;font-family:inherit">✓ 응답완료</button>
+            <button onclick="var _c=S.chatInquiries.find(x=>x.id==='${openItem.id}');if(_c)_c.st='replied';updateChatStatus('${openItem.id}','replied');S.chatOpt.openId=null;toast('응답완료 처리됨');R()" style="flex:1;padding:10px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.15);border-radius:7px;color:var(--gn);font-size:11px;font-weight:600;font-family:inherit">✓ 응답완료</button>
           </div>
         </div>
       </div>
