@@ -308,7 +308,7 @@ textarea.edin{resize:vertical;min-height:36px}
 // === Firebase REST API (Named Database) ===
 const FB={project:'gen-lang-client-0276589179',db:'ai-studio-e97c649f-c50c-4cd5-8952-6640d34f2444',key:'AIzaSyDmgOBu3kPUGzff_CyR647kIbN4F91seJE',token:null};
 FB.base=`https://firestore.googleapis.com/v1/projects/${FB.project}/databases/${FB.db}/documents`;
-function toFv(v){if(v===null||v===undefined)return{nullValue:null};if(typeof v==='string')return{stringValue:v};if(typeof v==='number')return Number.isInteger(v)?{integerValue:String(v)}:{doubleValue:v};if(typeof v==='boolean')return{booleanValue:v};if(Array.isArray(v))return{arrayValue:{values:v.map(toFv)}};if(typeof v==='object')return{mapValue:{fields:Object.fromEntries(Object.entries(v).map(([k,val])=>[k,toFv(val)]))}};return{stringValue:String(v)}}
+function toFv(v){if(v===null||v===undefined)return{nullValue:null};if(v instanceof Date)return{timestampValue:v.toISOString()};if(typeof v==='string')return{stringValue:v};if(typeof v==='number')return Number.isInteger(v)?{integerValue:String(v)}:{doubleValue:v};if(typeof v==='boolean')return{booleanValue:v};if(Array.isArray(v))return{arrayValue:{values:v.map(toFv)}};if(typeof v==='object')return{mapValue:{fields:Object.fromEntries(Object.entries(v).map(([k,val])=>[k,toFv(val)]))}};return{stringValue:String(v)}}
 function fromFv(v){if(!v)return null;if('stringValue' in v)return v.stringValue;if('integerValue' in v)return parseInt(v.integerValue);if('doubleValue' in v)return v.doubleValue;if('booleanValue' in v)return v.booleanValue;if('nullValue' in v)return null;if('arrayValue' in v)return(v.arrayValue.values||[]).map(fromFv);if('mapValue' in v)return Object.fromEntries(Object.entries(v.mapValue.fields||{}).map(([k,val])=>[k,fromFv(val)]));if('timestampValue' in v)return v.timestampValue;return null}
 function toFd(obj){return{fields:Object.fromEntries(Object.entries(obj).map(([k,v])=>[k,toFv(v)]))}}
 function fromFd(doc){if(!doc||!doc.fields)return{};const o={};Object.entries(doc.fields).forEach(([k,v])=>{o[k]=fromFv(v)});return o}
@@ -371,7 +371,7 @@ async function updateChatStatus(id,status){
 // Add news to Firestore
 async function addNewsToFs(data){
   if(!FB.token)await fbAuth();
-  return await fsAdd('news',{...data,createdAt:new Date().toISOString()});
+  return await fsAdd('news',{...data,createdAt:new Date()});
 }
 
 // Delete news from Firestore
@@ -429,7 +429,7 @@ const PAGES={
     {n:'제품 카드',f:['pp-0t','pp-0d','pp-1t','pp-1d','pp-2t','pp-2d','pp-3t','pp-3d','pp-4t','pp-4d','pp-5t','pp-5d'],i:['pp-img0','pp-img1','pp-img2','pp-img3','pp-img4','pp-img5']},
     {n:'제품 모달 상세 (카드 클릭시 팝업)',f:['pp-0m-spec','pp-0m-feat','pp-1m-spec','pp-1m-feat','pp-2m-spec','pp-2m-feat','pp-3m-spec','pp-3m-feat','pp-4m-spec','pp-4m-feat','pp-5m-spec','pp-5m-feat']},
   ]},
-  mainctrl:{name:'의료기기 MCU',secs:[
+  mainctrl:{name:'메인 컨트롤러',secs:[
     {n:'페이지 헤더',f:['mc-badge','mc-t1','mc-t2','mc-d1','mc-d2']},
     {n:'사양',f:['mc-sp0l','mc-sp0v','mc-sp1l','mc-sp1v','mc-sp2l','mc-sp2v','mc-sp3l','mc-sp3v','mc-sp4l','mc-sp4v','mc-sp5l','mc-sp5v','mc-sp6l','mc-sp6v','mc-sp7l','mc-sp7v'],i:['mc-img0']},
   ]},
@@ -437,21 +437,21 @@ const PAGES={
     {n:'페이지 헤더',f:['dp-badge','dp-t1','dp-t2','dp-d1','dp-d2']},
     {n:'디스플레이 종류',f:['dp-0t','dp-0d','dp-1t','dp-1d','dp-2t','dp-2d','dp-3t','dp-3d','dp-4t','dp-4d','dp-5t','dp-5d'],i:['dp-img0','dp-img1','dp-img2','dp-img3','dp-img4','dp-img5']},
   ]},
-  solar:{name:'태양광 인버터',secs:[
+  solar:{name:'기타 솔루션',secs:[
     {n:'페이지 헤더',f:['sl-badge','sl-t1','sl-t2','sl-d1','sl-d2']},
     {n:'사양',f:['sl-sp0l','sl-sp0v','sl-sp1l','sl-sp1v','sl-sp2l','sl-sp2v','sl-sp3l','sl-sp3v','sl-sp4l','sl-sp4v','sl-sp5l','sl-sp5v'],i:['sl-img0']},
     {n:'적용 분야',f:['sl-a0t','sl-a0d','sl-a1t','sl-a1d','sl-a2t','sl-a2d']},
   ]},
-  dispmodule:{name:'디스플레이 모듈',secs:[
+  dispmodule:{name:'디스플레이 모듈',hide:true,secs:[
     {n:'페이지 헤더',f:['dm-badge','dm-t1','dm-t2','dm-d1','dm-d2']},
     {n:'모듈 종류',f:['dm-0t','dm-0d','dm-1t','dm-1d','dm-2t','dm-2d','dm-3t','dm-3d','dm-4t','dm-4d','dm-5t','dm-5d'],i:['dm-img0','dm-img1','dm-img2','dm-img3','dm-img4','dm-img5']},
   ]},
-  tempctrl:{name:'디지털 온도제어기',secs:[
+  tempctrl:{name:'디지털 온도제어기',hide:true,secs:[
     {n:'페이지 헤더',f:['tc-badge','tc-t1','tc-t2','tc-d1','tc-d2']},
     {n:'사양',f:['tc-sp0l','tc-sp0v','tc-sp1l','tc-sp1v','tc-sp2l','tc-sp2v','tc-sp3l','tc-sp3v','tc-sp4l','tc-sp4v','tc-sp5l','tc-sp5v'],i:['tc-img0']},
     {n:'적용 분야',f:['tc-a0t','tc-a0d','tc-a1t','tc-a1d','tc-a2t','tc-a2d','tc-a3t','tc-a3d']},
   ]},
-  iot:{name:'IoT 스마트제어',secs:[
+  iot:{name:'IoT 스마트제어',hide:true,secs:[
     {n:'페이지 헤더',f:['io-badge','io-t1','io-t2','io-d1','io-d2']},
     {n:'사양',f:['io-sp0l','io-sp0v','io-sp1l','io-sp1v','io-sp2l','io-sp2v','io-sp3l','io-sp3v','io-sp4l','io-sp4v','io-sp5l','io-sp5v','io-sp6l','io-sp6v','io-sp7l','io-sp7v'],i:['io-img0']},
     {n:'기능',f:['io-f0t','io-f0d','io-f1t','io-f1d','io-f2t','io-f2d','io-f3t','io-f3d']},
@@ -543,7 +543,7 @@ function rDash(){const tv=S.weekly.reduce((a,x)=>a+x.v,0),tp=S.weekly.reduce((a,
 
 function rPages(){
   const pg=PAGES[S.page];if(!pg)return '';
-  let tabs='<div class="ptabs">';Object.entries(PAGES).forEach(([k,v])=>{tabs+=`<button class="ptab ${S.page===k?'on':''}" onclick="sp('${k}')">${v.name}</button>`});tabs+='</div>';
+  let tabs='<div class="ptabs">';Object.entries(PAGES).forEach(([k,v])=>{if(v.hide)return;tabs+=`<button class="ptab ${S.page===k?'on':''}" onclick="sp('${k}')">${v.name}</button>`});tabs+='</div>';
   const mt=`<div class="mtog"><button class="mbtn ${S.mode==='live'?'on':''}" onclick="sm('live')"><span class="dot"></span>라이브 프리뷰</button><button class="mbtn ${S.mode==='field'?'on':''}" onclick="sm('field')"><span class="dot"></span>필드 리스트</button></div>`;
   let warn='';if(!S.edit)warn=`<div style="background:rgba(251,191,36,.04);border:1px solid rgba(251,191,36,.1);border-radius:7px;padding:7px 10px;margin-bottom:8px;font-size:9px;color:var(--am)">⚠️ 사이드바 <b>편집 모드</b>를 활성화하세요</div>`;
   let content='';
@@ -634,11 +634,8 @@ function rLiveSub(pg){
 const PRD_CATS=[
   {id:'products',lb:'전체보기'},
   {id:'display',lb:'가전 디스플레이'},
-  {id:'mainctrl',lb:'의료기기 MCU'},
-  {id:'solar',lb:'태양광 인버터'},
-  {id:'dispmodule',lb:'디스플레이 모듈'},
-  {id:'tempctrl',lb:'디지털 온도제어기'},
-  {id:'iot',lb:'IoT 스마트제어'},
+  {id:'mainctrl',lb:'메인 컨트롤러'},
+  {id:'solar',lb:'기타 솔루션'},
 ];
 function prdNav(cur){return `<div style="display:flex;justify-content:center;margin-bottom:40px"><div style="display:inline-flex;flex-wrap:wrap;justify-content:center;background:#111;border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:5px;gap:3px">${PRD_CATS.map(c=>`<span style="padding:9px 16px;border-radius:99px;font-size:11px;cursor:pointer;white-space:nowrap;${c.id===cur?'background:#fff;color:#000;font-weight:500':'color:#9ca3af'}" onclick="sp('${c.id}')">${c.lb}</span>`).join('')}</div></div>`}
 function prdSubPage(pg){
@@ -957,8 +954,8 @@ function showBM(type,idx){
     _pf=null;_pfn='';
     if(isE)S.boardOpt[type].openId=ni.id;
     // Sync to Firestore
-    if(isN){(async()=>{try{if(!FB.token)await fbAuth();if(isE&&ni.id){await fsPatch('news/'+ni.id,{title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:ni.views})}else{const fid=await fsAdd('news',{title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:0,createdAt:new Date().toISOString()});if(fid)ni.id=fid}toast('✅ Firestore 동기화 완료')}catch(e){console.error('News sync error:',e);toast('⚠️ 로컬 저장됨 (동기화 실패)')}})()}
-    else{(async()=>{try{if(!FB.token)await fbAuth();const dlData={title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:ni.views,fileName:ni.file||''};if(ni.fileData)dlData.fileData=ni.fileData;if(isE&&ni.id){await fsPatch('downloads/'+ni.id,dlData)}else{dlData.createdAt=new Date().toISOString();dlData.views=0;const fid=await fsAdd('downloads',dlData);if(fid)ni.id=fid}toast('✅ 자료실 Firestore 동기화 완료')}catch(e){console.error('DL sync error:',e);toast('⚠️ 로컬 저장됨 (동기화 실패)')}})()}
+    if(isN){(async()=>{try{if(!FB.token)await fbAuth();if(isE&&ni.id){await fsPatch('news/'+ni.id,{title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:ni.views})}else{const fid=await fsAdd('news',{title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:0,createdAt:new Date()});if(fid)ni.id=fid}toast('✅ Firestore 동기화 완료')}catch(e){console.error('News sync error:',e);toast('⚠️ 로컬 저장됨 (동기화 실패)')}})()}
+    else{(async()=>{try{if(!FB.token)await fbAuth();const dlData={title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:ni.views,fileName:ni.file||''};if(ni.fileData)dlData.fileData=ni.fileData;if(isE&&ni.id){await fsPatch('downloads/'+ni.id,dlData)}else{dlData.createdAt=new Date();dlData.views=0;const fid=await fsAdd('downloads',dlData);if(fid)ni.id=fid}toast('✅ 자료실 Firestore 동기화 완료')}catch(e){console.error('DL sync error:',e);toast('⚠️ 로컬 저장됨 (동기화 실패)')}})()}
     R();toast(isE?'수정 완료':'등록 완료');
   });
 }
