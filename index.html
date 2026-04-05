@@ -316,7 +316,7 @@ const fh=()=>({'Content-Type':'application/json',...(FB.token?{Authorization:`Be
 async function fbAuth(){try{const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB.key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{"returnSecureToken":true}'});const d=await r.json();FB.token=d.idToken;return d.idToken}catch(e){console.error('Auth error:',e);return null}}
 async function fsGet(path){try{const r=await fetch(`${FB.base}/${path}?key=${FB.key}`,{headers:fh()});if(!r.ok){console.warn('fsGet fail:',path,r.status);return null}return fromFd(await r.json())}catch(e){console.error('fsGet error:',path,e);return null}}
 async function fsPatch(path,data){try{const r=await fetch(`${FB.base}/${path}?key=${FB.key}`,{method:'PATCH',headers:fh(),body:JSON.stringify(toFd(data))});if(!r.ok)console.warn('fsPatch fail:',path,r.status,await r.text());return r.ok}catch(e){console.error('fsPatch error:',e);return false}}
-async function fsList(col){try{const r=await fetch(`${FB.base}/${col}?key=${FB.key}&pageSize=100`,{headers:fh()});if(!r.ok){console.warn('fsList fail:',col,r.status);return[]}const d=await r.json();return(d.documents||[]).map(doc=>{const o=fromFd(doc);o._id=doc.name.split('/').pop();o._createTime=doc.createTime||'';return o})}catch(e){console.error('fsList error:',col,e);return[]}}
+async function fsList(col){try{const r=await fetch(`${FB.base}:runQuery?key=${FB.key}`,{method:'POST',headers:fh(),body:JSON.stringify({structuredQuery:{from:[{collectionId:col}],limit:200}})});if(!r.ok){console.warn('fsList fail:',col,r.status);return[]}const d=await r.json();return(Array.isArray(d)?d:[]).filter(x=>x.document).map(x=>{const doc=x.document;const o=fromFd(doc);o._id=doc.name.split('/').pop();o._createTime=doc.createTime||'';return o})}catch(e){console.error('fsList error:',col,e);return[]}}
 async function fsAdd(col,data){try{const r=await fetch(`${FB.base}/${col}?key=${FB.key}`,{method:'POST',headers:fh(),body:JSON.stringify(toFd(data))});if(!r.ok){console.warn('fsAdd fail:',col,r.status);return null}const d=await r.json();return d.name.split('/').pop()}catch(e){console.error('fsAdd error:',e);return null}}
 async function fsDel(path){try{const r=await fetch(`${FB.base}/${path}?key=${FB.key}`,{method:'DELETE',headers:fh()});return r.ok}catch(e){return false}}
 
@@ -443,12 +443,12 @@ const PAGES={
 };
 
 const S={view:'dashboard',edit:false,page:'home',mode:'live',upTgt:null,content:{},images:{},videos:{},theme:'dark',
-clients:['SAMSUNG','LG Electronics','SK hynix','HYUNDAI','Hanwha','LS ELECTRIC','POSCO'],
-news:[{id:'n1',cat:'공지사항',title:'2026년 상반기 신제품 라인업 출시 안내',date:'2026.03.15',views:152,content:''},{id:'n2',cat:'보도자료',title:'스마트팩토리 고도화 프로젝트 완료',date:'2026.02.28',views:89,content:''},{id:'n3',cat:'공지사항',title:'ISO 14001 인증 갱신',date:'2026.01.10',views:210,content:''}],
-downloads:[{id:'d1',cat:'카탈로그',title:'2026 종합 카탈로그',date:'2026.03.01',views:340,file:'카탈로그_2026.pdf',fileData:null},{id:'d2',cat:'데이터시트',title:'MC-200 데이터시트',date:'2026.02.15',views:178,file:'MC-200.pdf',fileData:null}],
-chatInquiries:[{id:'cb1',phone:'01028372893',cat:'제품',date:'2026.04.04',msgs:10,st:'new'},{id:'cb2',phone:'01076548808',cat:'제품',date:'2026.04.04',msgs:2,st:'new'},{id:'cb3',phone:'010-1234-5678',cat:'제품',date:'2026.04.04',msgs:2,st:'new'}],
-weekly:['월','화','수','목','금','토','일'].map(d=>({d,v:~~(Math.random()*180+20),p:~~(Math.random()*450+50)})),
-inquiries:[{id:1,nm:'김영호',co:'(주)대한전자',msg:'냉장고 제어기판 견적 문의',date:'2026-03-30',st:'new'},{id:2,nm:'이수진',co:'메디텍',msg:'의료기기 MCU 보드 샘플 요청',date:'2026-03-28',st:'replied'},{id:3,nm:'박준성',co:'솔라파워',msg:'태양광 인버터 제어기 기술 상담',date:'2026-03-27',st:'new'}],
+clients:[],
+news:[],
+downloads:[],
+chatInquiries:[],
+weekly:['월','화','수','목','금','토','일'].map(d=>({d,v:0,p:0})),
+inquiries:[],
 boardOpt:{news:{showDate:true,showViews:true,filter:'전체',search:'',openId:null},dl:{showDate:true,showViews:true,filter:'전체',search:'',openId:null}},
 inqOpt:{filter:'전체',openId:null,replyText:{},replyStatus:{}},
 chatOpt:{filter:'전체',openId:null},
