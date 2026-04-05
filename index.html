@@ -325,9 +325,9 @@ async function loadFromFirestore(){
   try{
     toast('데이터 로딩중...');
     await fbAuth();
-    const[text,media,clients,settings,newsItems,inqItems,chatItems]=await Promise.all([
+    const[text,media,clients,settings,newsItems,inqItems,chatItems,dlItems]=await Promise.all([
       fsGet('siteContent/text'),fsGet('siteContent/media'),fsGet('siteContent/clients'),fsGet('siteContent/settings'),
-      fsList('news'),fsList('inquiries'),fsList('chatInquiries')
+      fsList('news'),fsList('inquiries'),fsList('chatInquiries'),fsList('downloads')
     ]);
     if(text)Object.entries(text).forEach(([k,v])=>{if(typeof v==='string')S.content[k]=v});
     if(media){if(media.images&&typeof media.images==='object')Object.entries(media.images).forEach(([k,v])=>{if(v)S.images[k]=v});if(media.videos&&typeof media.videos==='object')Object.entries(media.videos).forEach(([k,v])=>{if(v)S.videos[k]=v})}
@@ -336,6 +336,7 @@ async function loadFromFirestore(){
     if(newsItems.length)S.news=newsItems.sort((a,b)=>(b._createTime||'').localeCompare(a._createTime||'')).map(n=>({id:n._id,cat:n.category||'공지사항',title:n.title||'',date:n.createdAt?new Date(n.createdAt).toLocaleDateString('ko-KR'):n._createTime?new Date(n._createTime).toLocaleDateString('ko-KR'):'-',views:n.views||0,content:n.content||'',author:n.author||''}));
     if(inqItems.length)S.inquiries=inqItems.sort((a,b)=>(b._createTime||'').localeCompare(a._createTime||'')).map(n=>{let st=n.status||'new';if(st==='pending')st='new';return{id:n._id,nm:n.name||'',co:n.company||'',msg:n.message||'',email:n.email||'',phone:n.phone||'',date:n.createdAt?new Date(n.createdAt).toLocaleDateString('ko-KR'):n._createTime?new Date(n._createTime).toLocaleDateString('ko-KR'):'-',st}});
     if(chatItems.length)S.chatInquiries=chatItems.sort((a,b)=>(b._createTime||'').localeCompare(a._createTime||'')).map(n=>({id:n._id,phone:n.contact||'',cat:n.category||'',date:n.createdAt?new Date(n.createdAt).toLocaleDateString('ko-KR'):n._createTime?new Date(n._createTime).toLocaleDateString('ko-KR'):'-',msgs:(n.conversation||[]).length,st:n.status||'new',conversation:n.conversation||[],userName:n.userName||'',topic:n.topic||''}));
+    if(dlItems.length)S.downloads=dlItems.sort((a,b)=>(b._createTime||'').localeCompare(a._createTime||'')).map(n=>({id:n._id,cat:n.category||'카탈로그',title:n.title||'',date:n.createdAt?new Date(n.createdAt).toLocaleDateString('ko-KR'):n._createTime?new Date(n._createTime).toLocaleDateString('ko-KR'):'-',views:n.views||0,content:n.content||'',author:n.author||'',file:n.fileName||'',fileData:n.fileData||null}));
     R();toast('✅ Firestore 연동 완료');
   }catch(e){console.error('Load error:',e);R();toast('⚠️ 오프라인 모드')}
 }
@@ -377,6 +378,11 @@ async function addNewsToFs(data){
 async function delNewsFromFs(id){
   if(!FB.token)await fbAuth();
   return await fsDel('news/'+id);
+}
+// Delete download from Firestore
+async function delDlFromFs(id){
+  if(!FB.token)await fbAuth();
+  return await fsDel('downloads/'+id);
 }
 
 const PAGES={
@@ -839,7 +845,7 @@ function rBoard(type,title,items){
           ${openItem.fileData?`<button onclick="dlFile('${type}','${openItem.id}')" style="padding:4px 12px;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);border-radius:6px;color:var(--ac);font-size:10px;font-weight:600;font-family:inherit">다운로드</button>`:''}</div>`:''}
         <div style="padding:16px 28px;border-top:1px solid var(--bd);display:flex;gap:6px">
           <button onclick="showBM('${type}',${items.indexOf(openItem)})" style="padding:7px 18px;background:var(--ac);border:none;border-radius:7px;color:#fff;font-size:11px;font-weight:600;font-family:inherit">수정</button>
-          <button onclick="if(confirm('정말 삭제하시겠습니까?')){const _di='${openItem.id}';${isN?'S.news':'S.downloads'}.splice(${items.indexOf(openItem)},1);S.boardOpt.${type}.openId=null;${isN?`delNewsFromFs(_di);`:''}R();toast('삭제됨')}" style="padding:7px 18px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.15);border-radius:7px;color:var(--rd);font-size:11px;font-weight:600;font-family:inherit">삭제</button>
+          <button onclick="if(confirm('정말 삭제하시겠습니까?')){const _di='${openItem.id}';${isN?'S.news':'S.downloads'}.splice(${items.indexOf(openItem)},1);S.boardOpt.${type}.openId=null;${isN?`delNewsFromFs(_di);`:`delDlFromFs(_di);`}R();toast('삭제됨')}" style="padding:7px 18px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.15);border-radius:7px;color:var(--rd);font-size:11px;font-weight:600;font-family:inherit">삭제</button>
         </div>
       </div>
     </div>`;
@@ -950,8 +956,9 @@ function showBM(type,idx){
     else{if(isN)S.news.unshift(ni);else S.downloads.unshift(ni)}
     _pf=null;_pfn='';
     if(isE)S.boardOpt[type].openId=ni.id;
-    // Sync news to Firestore
+    // Sync to Firestore
     if(isN){(async()=>{try{if(!FB.token)await fbAuth();if(isE&&ni.id){await fsPatch('news/'+ni.id,{title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:ni.views})}else{const fid=await fsAdd('news',{title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:0,createdAt:new Date().toISOString()});if(fid)ni.id=fid}toast('✅ Firestore 동기화 완료')}catch(e){console.error('News sync error:',e);toast('⚠️ 로컬 저장됨 (동기화 실패)')}})()}
+    else{(async()=>{try{if(!FB.token)await fbAuth();const dlData={title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:ni.views,fileName:ni.file||''};if(ni.fileData)dlData.fileData=ni.fileData;if(isE&&ni.id){await fsPatch('downloads/'+ni.id,dlData)}else{dlData.createdAt=new Date().toISOString();dlData.views=0;const fid=await fsAdd('downloads',dlData);if(fid)ni.id=fid}toast('✅ 자료실 Firestore 동기화 완료')}catch(e){console.error('DL sync error:',e);toast('⚠️ 로컬 저장됨 (동기화 실패)')}})()}
     R();toast(isE?'수정 완료':'등록 완료');
   });
 }
