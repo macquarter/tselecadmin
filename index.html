@@ -314,11 +314,11 @@ function toFd(obj){return{fields:Object.fromEntries(Object.entries(obj).map(([k,
 function fromFd(doc){if(!doc||!doc.fields)return{};const o={};Object.entries(doc.fields).forEach(([k,v])=>{o[k]=fromFv(v)});return o}
 const fh=()=>({'Content-Type':'application/json',...(FB.token?{Authorization:`Bearer ${FB.token}`}:{})});
 async function fbAuth(){try{const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB.key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{"returnSecureToken":true}'});const d=await r.json();FB.token=d.idToken;return d.idToken}catch(e){console.error('Auth error:',e);return null}}
-async function fsGet(path){try{const r=await fetch(`${FB.base}/${path}`,{headers:fh()});if(!r.ok)return null;return fromFd(await r.json())}catch(e){return null}}
-async function fsPatch(path,data){try{const r=await fetch(`${FB.base}/${path}`,{method:'PATCH',headers:fh(),body:JSON.stringify(toFd(data))});return r.ok}catch(e){return false}}
-async function fsList(col){try{const r=await fetch(`${FB.base}/${col}`,{headers:fh()});if(!r.ok)return[];const d=await r.json();return(d.documents||[]).map(doc=>{const o=fromFd(doc);o._id=doc.name.split('/').pop();o._createTime=doc.createTime||'';return o})}catch(e){return[]}}
-async function fsAdd(col,data){try{const r=await fetch(`${FB.base}/${col}`,{method:'POST',headers:fh(),body:JSON.stringify(toFd(data))});if(!r.ok)return null;const d=await r.json();return d.name.split('/').pop()}catch(e){return null}}
-async function fsDel(path){try{const r=await fetch(`${FB.base}/${path}`,{method:'DELETE',headers:fh()});return r.ok}catch(e){return false}}
+async function fsGet(path){try{const r=await fetch(`${FB.base}/${path}?key=${FB.key}`,{headers:fh()});if(!r.ok){console.warn('fsGet fail:',path,r.status);return null}return fromFd(await r.json())}catch(e){console.error('fsGet error:',path,e);return null}}
+async function fsPatch(path,data){try{const r=await fetch(`${FB.base}/${path}?key=${FB.key}`,{method:'PATCH',headers:fh(),body:JSON.stringify(toFd(data))});if(!r.ok)console.warn('fsPatch fail:',path,r.status,await r.text());return r.ok}catch(e){console.error('fsPatch error:',e);return false}}
+async function fsList(col){try{const r=await fetch(`${FB.base}/${col}?key=${FB.key}&pageSize=100`,{headers:fh()});if(!r.ok){console.warn('fsList fail:',col,r.status);return[]}const d=await r.json();return(d.documents||[]).map(doc=>{const o=fromFd(doc);o._id=doc.name.split('/').pop();o._createTime=doc.createTime||'';return o})}catch(e){console.error('fsList error:',col,e);return[]}}
+async function fsAdd(col,data){try{const r=await fetch(`${FB.base}/${col}?key=${FB.key}`,{method:'POST',headers:fh(),body:JSON.stringify(toFd(data))});if(!r.ok){console.warn('fsAdd fail:',col,r.status);return null}const d=await r.json();return d.name.split('/').pop()}catch(e){console.error('fsAdd error:',e);return null}}
+async function fsDel(path){try{const r=await fetch(`${FB.base}/${path}?key=${FB.key}`,{method:'DELETE',headers:fh()});return r.ok}catch(e){return false}}
 
 // Load all data from Firestore
 async function loadFromFirestore(){
@@ -334,7 +334,7 @@ async function loadFromFirestore(){
     if(clients&&Array.isArray(clients.list))S.clients=clients.list;
     if(settings&&settings.boardOpt){if(settings.boardOpt.news)Object.assign(S.boardOpt.news,settings.boardOpt.news);if(settings.boardOpt.dl)Object.assign(S.boardOpt.dl,settings.boardOpt.dl)}
     if(newsItems.length)S.news=newsItems.sort((a,b)=>(b._createTime||'').localeCompare(a._createTime||'')).map(n=>({id:n._id,cat:n.category||'공지사항',title:n.title||'',date:n.createdAt?new Date(n.createdAt).toLocaleDateString('ko-KR'):n._createTime?new Date(n._createTime).toLocaleDateString('ko-KR'):'-',views:n.views||0,content:n.content||'',author:n.author||''}));
-    if(inqItems.length)S.inquiries=inqItems.sort((a,b)=>(b._createTime||'').localeCompare(a._createTime||'')).map(n=>({id:n._id,nm:n.name||'',co:n.company||'',msg:n.message||'',email:n.email||'',phone:n.phone||'',date:n.createdAt?new Date(n.createdAt).toLocaleDateString('ko-KR'):n._createTime?new Date(n._createTime).toLocaleDateString('ko-KR'):'-',st:n.status||'new'}));
+    if(inqItems.length)S.inquiries=inqItems.sort((a,b)=>(b._createTime||'').localeCompare(a._createTime||'')).map(n=>{let st=n.status||'new';if(st==='pending')st='new';return{id:n._id,nm:n.name||'',co:n.company||'',msg:n.message||'',email:n.email||'',phone:n.phone||'',date:n.createdAt?new Date(n.createdAt).toLocaleDateString('ko-KR'):n._createTime?new Date(n._createTime).toLocaleDateString('ko-KR'):'-',st}});
     if(chatItems.length)S.chatInquiries=chatItems.sort((a,b)=>(b._createTime||'').localeCompare(a._createTime||'')).map(n=>({id:n._id,phone:n.contact||'',cat:n.category||'',date:n.createdAt?new Date(n.createdAt).toLocaleDateString('ko-KR'):n._createTime?new Date(n._createTime).toLocaleDateString('ko-KR'):'-',msgs:(n.conversation||[]).length,st:n.status||'new',conversation:n.conversation||[],userName:n.userName||'',topic:n.topic||''}));
     R();toast('✅ Firestore 연동 완료');
   }catch(e){console.error('Load error:',e);R();toast('⚠️ 오프라인 모드')}
@@ -792,7 +792,7 @@ function rBoard(type,title,items){
           ${openItem.fileData?`<button onclick="dlFile('${type}','${openItem.id}')" style="padding:4px 12px;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);border-radius:6px;color:var(--ac);font-size:10px;font-weight:600;font-family:inherit">다운로드</button>`:''}</div>`:''}
         <div style="padding:16px 28px;border-top:1px solid var(--bd);display:flex;gap:6px">
           <button onclick="showBM('${type}',${items.indexOf(openItem)})" style="padding:7px 18px;background:var(--ac);border:none;border-radius:7px;color:#fff;font-size:11px;font-weight:600;font-family:inherit">수정</button>
-          <button onclick="if(confirm('정말 삭제하시겠습니까?')){${isN?'S.news':'S.downloads'}.splice(${items.indexOf(openItem)},1);S.boardOpt.${type}.openId=null;R();toast('삭제됨')}" style="padding:7px 18px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.15);border-radius:7px;color:var(--rd);font-size:11px;font-weight:600;font-family:inherit">삭제</button>
+          <button onclick="if(confirm('정말 삭제하시겠습니까?')){const _di='${openItem.id}';${isN?'S.news':'S.downloads'}.splice(${items.indexOf(openItem)},1);S.boardOpt.${type}.openId=null;${isN?`delNewsFromFs(_di);`:''}R();toast('삭제됨')}" style="padding:7px 18px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.15);border-radius:7px;color:var(--rd);font-size:11px;font-weight:600;font-family:inherit">삭제</button>
         </div>
       </div>
     </div>`;
@@ -903,6 +903,8 @@ function showBM(type,idx){
     else{if(isN)S.news.unshift(ni);else S.downloads.unshift(ni)}
     _pf=null;_pfn='';
     if(isE)S.boardOpt[type].openId=ni.id;
+    // Sync news to Firestore
+    if(isN){(async()=>{try{if(!FB.token)await fbAuth();if(isE&&ni.id){await fsPatch('news/'+ni.id,{title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:ni.views})}else{const fid=await fsAdd('news',{title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:0,createdAt:new Date().toISOString()});if(fid)ni.id=fid}toast('✅ Firestore 동기화 완료')}catch(e){console.error('News sync error:',e);toast('⚠️ 로컬 저장됨 (동기화 실패)')}})()}
     R();toast(isE?'수정 완료':'등록 완료');
   });
 }
