@@ -286,7 +286,18 @@ textarea.edin{resize:vertical;min-height:36px}
 </style>
 </head>
 <body>
-<div class="shell">
+<!-- Login Modal -->
+<div id="loginOverlay" style="position:fixed;inset:0;background:linear-gradient(135deg,#000 0%,#0a0a0a 100%);z-index:9999;display:flex;align-items:center;justify-content:center">
+<div style="background:#111;border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:40px;width:340px;text-align:center">
+<div style="display:flex;flex-direction:column;line-height:.82;font-weight:900;font-size:32px;letter-spacing:-.12em;text-transform:uppercase;color:#fff;margin-bottom:6px"><span>TSE</span><span>LEC</span></div>
+<div style="font-size:10px;color:#38bdf8;font-weight:700;margin-bottom:28px;letter-spacing:.1em">ADMIN DASHBOARD</div>
+<input id="loginId" placeholder="아이디" style="width:100%;padding:10px 14px;margin-bottom:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#fff;font-family:inherit;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')document.getElementById('loginPw').focus()"/>
+<input id="loginPw" type="password" placeholder="비밀번호" style="width:100%;padding:10px 14px;margin-bottom:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#fff;font-family:inherit;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')doLogin()"/>
+<div id="loginErr" style="font-size:10px;color:#f87171;min-height:18px;margin-bottom:8px"></div>
+<button onclick="doLogin()" style="width:100%;padding:11px;background:linear-gradient(135deg,#38bdf8,#818cf8);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">로그인</button>
+</div>
+</div>
+<div class="shell" style="display:none" id="appShell">
 <aside class="sb"><div class="sb-hd" id="sbHd"></div><nav class="sb-nav" id="sbNav"></nav><div class="sb-bot" id="sbBot"></div></aside>
 <main class="mn"><header class="topbar"><h1 id="tbT"></h1><div class="topbar-r"><span class="eind" id="eiTag" style="display:none">편집 활성</span><div class="avt">T</div></div></header><div class="mc" id="mc"></div></main>
 </div>
@@ -495,7 +506,7 @@ function R(){
   const sbLogoHtml=logoSrc?`<img src="${logoSrc}" alt="Logo" style="height:28px;object-fit:contain;cursor:pointer" onclick="sw('dashboard');location.reload()" title="홈 / 새로고침" crossorigin="anonymous"/>`:`<div class="sb-logo" onclick="sw('dashboard');location.reload()" title="홈 / 새로고침"><span>TSE</span><span>LEC</span></div>`;
   $('#sbHd').innerHTML=`${S.edit?`<div class="edi" style="display:inline-flex;align-items:center" onclick="event.stopPropagation();sImgUp('logo-img')">${sbLogoHtml}</div>`:sbLogoHtml}<span style="font-size:8px;color:var(--ac);font-weight:700;margin-left:auto">ADMIN</span>`;
   let nav='';NAV.forEach(n=>{const b=n.bg?n.bg():0;nav+=`<button class="nb ${S.view===n.id?'on':''}" onclick="sw('${n.id}')">${n.lb}${b?`<span class="bdg">${b}</span>`:''}</button>`});$('#sbNav').innerHTML=nav;
-  let bot='';if(S.view==='pages')bot+=`<button class="etb ${S.edit?'on':''}" onclick="te()">${S.edit?'👁️ 미리보기':'✏️ 편집 모드'}</button>`;bot+=`<button class="svb" onclick="saveToFirestore()">💾 저장</button>`;$('#sbBot').innerHTML=bot;
+  let bot='';if(S.view==='pages')bot+=`<button class="etb ${S.edit?'on':''}" onclick="te()">${S.edit?'👁️ 미리보기':'✏️ 편집 모드'}</button>`;bot+=`<button class="svb" onclick="saveToFirestore()">💾 저장</button>`;bot+=`<button style="width:100%;margin-top:4px;padding:7px;border-radius:7px;font-size:10px;font-weight:600;border:1px solid var(--bd);background:var(--btn-bg);color:var(--tx4);font-family:inherit;cursor:pointer" onclick="doLogout()">🔓 로그아웃</button>`;$('#sbBot').innerHTML=bot;
   const tt={dashboard:'대시보드',pages:'페이지 편집',inquiries:'문의 관리',chatbot:'챗봇 문의','news-b':'공지사항','dl-b':'자료실',settings:'설정'};$('#tbT').textContent=tt[S.view]||'';$('#eiTag').style.display=S.edit?'':'none';
   const mc=$('#mc');
   if(S.view==='dashboard')mc.innerHTML=rDash();
@@ -994,8 +1005,14 @@ function rSet(){return `<div style="max-width:440px;margin:0 auto"><div class="s
 function exJ(){const d=JSON.stringify({content:S.content,images:S.images,videos:S.videos,clients:S.clients,news:S.news,downloads:S.downloads},null,2);const b=new Blob([d],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='tselec-content.json';a.click();toast('JSON 다운로드')}
 
 // Load saved theme
+// Login system
+function doLogin(){const id=document.getElementById('loginId').value.trim(),pw=document.getElementById('loginPw').value;if(id==='tsadmin'&&pw==='admin'){try{sessionStorage.setItem('tselec-auth','1')}catch(e){}showApp()}else{document.getElementById('loginErr').textContent='아이디 또는 비밀번호가 올바르지 않습니다'}}
+function doLogout(){try{sessionStorage.removeItem('tselec-auth')}catch(e){}location.reload()}
+function showApp(){document.getElementById('loginOverlay').style.display='none';document.getElementById('appShell').style.display='flex';R();loadFromFirestore()}
+function checkAuth(){try{return sessionStorage.getItem('tselec-auth')==='1'}catch(e){return false}}
+
 try{const st=localStorage.getItem('tselec-theme');if(st){S.theme=st;if(st==='light')document.body.classList.add('light')}}catch(e){}
-R();loadFromFirestore();
+if(checkAuth()){showApp()}else{document.getElementById('loginOverlay').style.display='flex'}
 document.addEventListener('click',e=>{const a=e.target.closest('a');if(a){const h=a.getAttribute('href');if(h&&!h.startsWith('javascript:')&&!h.startsWith('blob:')&&!h.startsWith('data:'))e.preventDefault()}},true);
 </script>
 </body>
