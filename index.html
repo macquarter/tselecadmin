@@ -401,6 +401,7 @@ const PAGES={
     {n:'히어로',f:['hero-badge','hero-t1','hero-t2','hero-sub'],i:['hero-bg']},
     {n:'고객사',f:['cl-title'],cl:true},
     {n:'전문분야',f:['exp-badge','exp-t1','exp-t2','e0s','e0t','e0d','e1s','e1t','e1d','e2s','e2t','e2d'],i:['ei0','ei1','ei2']},
+    {n:'핵심 품질 성과 (KPI 카운트업)',f:['kp-badge','kp-t1','kp-t2','kp-sub','kp-0v','kp-0u','kp-0l','kp-1v','kp-1u','kp-1l','kp-2v','kp-2u','kp-2l','kp-3v','kp-3u','kp-3l']},
     {n:'회사소개',f:['abt-t1','abt-t2','abt-d','s1v','s1l','s2v','s2l','s3v','s3l','s4v','s4l','av-lb','av-tl'],v:['about-vid']},
     {n:'제품',f:['p-t1','p-t2','p0n','p0d','p1n','p1d','p2n','p2d','p3n','p3d','p4n','p4d'],i:['pi0','pi1','pi2','pi3','pi4']},
     {n:'FAQ',f:['fq-t','fq-s','f0q','f0a','f1q','f1a','f2q','f2a','f3q','f3a']},
@@ -443,15 +444,18 @@ const PAGES={
   mainctrl:{name:'메인 컨트롤러',secs:[
     {n:'페이지 헤더',f:['mc-badge','mc-t1','mc-t2','mc-d1','mc-d2']},
     {n:'사양',f:['mc-sp0l','mc-sp0v','mc-sp1l','mc-sp1v','mc-sp2l','mc-sp2v','mc-sp3l','mc-sp3v','mc-sp4l','mc-sp4v','mc-sp5l','mc-sp5v','mc-sp6l','mc-sp6v','mc-sp7l','mc-sp7v'],i:['mc-img0']},
+    {n:'🆕 임베디드 모듈 카드 (페이지 하단)',f:['mc-mod-badge','mc-mod-t1','mc-mod-t2','mc-mod-sub','mc-mod-0t','mc-mod-0d','mc-mod-1t','mc-mod-1d']},
   ]},
   display:{name:'가전 디스플레이',secs:[
     {n:'페이지 헤더',f:['dp-badge','dp-t1','dp-t2','dp-d1','dp-d2']},
     {n:'디스플레이 종류',f:['dp-0t','dp-0d','dp-1t','dp-1d','dp-2t','dp-2d','dp-3t','dp-3d','dp-4t','dp-4d','dp-5t','dp-5d'],i:['dp-img0','dp-img1','dp-img2','dp-img3','dp-img4','dp-img5']},
+    {n:'🆕 HMI 모듈 카드 (페이지 하단)',f:['dp-mod-badge','dp-mod-t1','dp-mod-t2','dp-mod-sub','dp-mod-0t','dp-mod-0d']},
   ]},
   solar:{name:'기타 솔루션',secs:[
     {n:'페이지 헤더',f:['ot-badge','ot-t1','ot-t2','ot-d1','ot-d2']},
     {n:'사양',f:['ot-sp0l','ot-sp0v','ot-sp1l','ot-sp1v','ot-sp2l','ot-sp2v','ot-sp3l','ot-sp3v','ot-sp4l','ot-sp4v','ot-sp5l','ot-sp5v'],i:['ot-img0']},
     {n:'적용 분야',f:['ot-a0t','ot-a0d','ot-a1t','ot-a1d','ot-a2t','ot-a2d','ot-a3t','ot-a3d']},
+    {n:'🆕 주변기기 모듈 카드 (페이지 하단)',f:['ot-mod-badge','ot-mod-t1','ot-mod-t2','ot-mod-sub','ot-mod-0t','ot-mod-0d','ot-mod-1t','ot-mod-1d']},
   ]},
   dispmodule:{name:'디스플레이 모듈',hide:true,secs:[
     {n:'페이지 헤더',f:['dm-badge','dm-t1','dm-t2','dm-d1','dm-d2']},
@@ -466,6 +470,30 @@ const PAGES={
     {n:'페이지 헤더',f:['io-badge','io-t1','io-t2','io-d1','io-d2']},
     {n:'사양',f:['io-sp0l','io-sp0v','io-sp1l','io-sp1v','io-sp2l','io-sp2v','io-sp3l','io-sp3v','io-sp4l','io-sp4v','io-sp5l','io-sp5v','io-sp6l','io-sp6v','io-sp7l','io-sp7v'],i:['io-img0']},
     {n:'기능',f:['io-f0t','io-f0d','io-f1t','io-f1d','io-f2t','io-f2d','io-f3t','io-f3d']},
+  ]},
+  'biz-home':{name:'사업영역·가전',secs:[
+    {n:'페이지 헤더',f:['bh-badge','bh-t1','bh-t2','bh-sub']},
+    {n:'4개 제품 카드',f:['bh-0n','bh-0d','bh-1n','bh-1d','bh-2n','bh-2d','bh-3n','bh-3d'],i:['bh-img0','bh-img1','bh-img2','bh-img3']},
+    {n:'모달 솔루션 (4개씩)',f:['bh-0sol','bh-1sol','bh-2sol','bh-3sol']},
+    {n:'모달 적용 보드',f:['bh-0brd','bh-1brd','bh-2brd','bh-3brd']},
+  ]},
+  'biz-industrial':{name:'사업영역·산업용',secs:[
+    {n:'페이지 헤더',f:['bi-badge','bi-t1','bi-t2','bi-sub']},
+    {n:'5개 제품 카드',f:['bi-0n','bi-0d','bi-1n','bi-1d','bi-2n','bi-2d','bi-3n','bi-3d','bi-4n','bi-4d'],i:['bi-img0','bi-img1','bi-img2','bi-img3','bi-img4']},
+    {n:'모달 솔루션',f:['bi-0sol','bi-1sol','bi-2sol','bi-3sol','bi-4sol']},
+    {n:'모달 적용 보드',f:['bi-0brd','bi-1brd','bi-2brd','bi-3brd','bi-4brd']},
+  ]},
+  'biz-medical':{name:'사업영역·의료기기',secs:[
+    {n:'페이지 헤더',f:['bm-badge','bm-t1','bm-t2','bm-sub']},
+    {n:'3개 제품 카드',f:['bm-0n','bm-0d','bm-1n','bm-1d','bm-2n','bm-2d'],i:['bm-img0','bm-img1','bm-img2']},
+    {n:'모달 솔루션',f:['bm-0sol','bm-1sol','bm-2sol']},
+    {n:'모달 적용 보드',f:['bm-0brd','bm-1brd','bm-2brd']},
+  ]},
+  'biz-renewable':{name:'사업영역·신재생',secs:[
+    {n:'페이지 헤더',f:['br-badge','br-t1','br-t2','br-sub']},
+    {n:'4개 제품 카드',f:['br-0n','br-0d','br-1n','br-1d','br-2n','br-2d','br-3n','br-3d'],i:['br-img0','br-img1','br-img2','br-img3']},
+    {n:'모달 솔루션',f:['br-0sol','br-1sol','br-2sol','br-3sol']},
+    {n:'모달 적용 보드',f:['br-0brd','br-1brd','br-2brd','br-3brd']},
   ]},
   process:{name:'공정도',secs:[
     {n:'페이지 헤더',f:['pr-badge','pr-t1','pr-t2']},
@@ -502,6 +530,35 @@ const D2={'gr-badge':'CEO Message','gr-t1':'미래를 향한','gr-t2':'우리의
 'ot-badge':'Other Solutions','ot-t1':'한계를 넘어서는','ot-t2':'산업용 제어 솔루션.','ot-d1':'정밀 온도 제어부터 특수 산업 장비까지,','ot-d2':'태승전자의 혁신적인 기술력을 경험하세요.','ot-sp0l':'제어 범위','ot-sp0v':'-20°C ~ +200°C','ot-sp1l':'정확도','ot-sp1v':'±0.5°C','ot-sp2l':'응답 시간','ot-sp2v':'< 2초','ot-sp3l':'입력 신호','ot-sp3v':'Pt100, K-Type TC','ot-sp4l':'출력','ot-sp4v':'4-20mA, 0-10V','ot-sp5l':'인증','ot-sp5v':'ISO 9001, CE','ot-a0t':'냉방/냉동','ot-a0d':'냉동 저장실, 냉장 운송, 초저온 처리 시스템의 온도 유지에 사용되는 고신뢰성 솔루션입니다.','ot-a1t':'산업용 장비','ot-a1d':'금속 가공, 열처리, 반도체 제조 등 고정밀 온도 제어가 필요한 산업 공정에 적용됩니다.','ot-a2t':'식품 가공','ot-a2d':'식품 건조, 가열 살균, 냉각 공정에서 엄격한 온도 관리를 통해 제품 품질을 보증합니다.','ot-a3t':'농업 시설','ot-a3d':'온실, 육묘장, 축사 등에서 최적의 생육 환경 유지를 위한 환경 제어 시스템에 통합됩니다.',
 'pr-badge':'Manufacturing','pr-t1':'정밀함이 만드는','pr-t2':'완벽한 품질.','pr-01t':'자재입고','pr-01d':'입고검사 IQC','pr-02t':'크림납 인쇄','pr-02d':'Cream Solder Printing','pr-03t':'SMT 공정','pr-03d':'고속기/저속기 실장','pr-04t':'수삽입/검사','pr-04d':'Manual Insertion','pr-05t':'자동 납땜','pr-05d':'Auto Soldering','pr-06t':'목시검사','pr-06d':'Visual Inspection','pr-07t':'조립','pr-07d':'Assembly','pr-08t':'I.C.T 테스트','pr-08d':'In-Circuit Test','pr-09t':'프로그램','pr-09d':'Program Writing','pr-10t':'기능검사','pr-10d':'Function Test','pr-11t':'포장/출하','pr-11d':'Packaging/Shipping','pr-k0v':'100PPM 이하','pr-k0l':'불량률','pr-k1v':'99%','pr-k1l':'납기준수율','pr-k2v':'100%','pr-k2l':'검사커버리지','pr-k3v':'30만+','pr-k3l':'월생산량'};
 Object.entries(D2).forEach(([k,v])=>{if(!S.content[k])S.content[k]=v});
+const D3={
+'kp-badge':'Quality Performance','kp-t1':'숫자로 증명하는','kp-t2':'핵심 품질 성과.','kp-sub':'36년간 한결같은 품질 표준이 만들어낸 성과 — 단순한 숫자가 아닌 신뢰의 기록입니다.',
+'kp-0v':'100','kp-0u':'PPM 이하','kp-0l':'불량률','kp-1v':'99','kp-1u':'%','kp-1l':'납기 준수율','kp-2v':'100','kp-2u':'%','kp-2l':'검사 커버리지','kp-3v':'30','kp-3u':'만+','kp-3l':'월 생산능력',
+'bh-badge':'Home Appliance','bh-t1':'일상을 바꾸는 기술.','bh-t2':'가전 제어 솔루션.','bh-sub':'냉장고·정수기·레인지후드·공기청정기 등 생활가전의 핵심 제어보드.',
+'bh-0n':'냉장고','bh-0d':'멀티존 온도 관리·인버터 컴프레서 제어·UI를 통합한 가정용 냉장 솔루션.','bh-0sol':'인버터 컴프레서 구동 / 멀티존 온도 / 도어 알람·자동 제상 / 터치 UI 다국어','bh-0brd':'Main PCB · POWER PCB · Display (HMI)',
+'bh-1n':'정수기','bh-1d':'냉·온·정수 모듈 통합 제어. 직수형·저수형 모두 대응합니다.','bh-1sol':'냉수·온수·얼음 통합 / 유량 센서 추출 / 필터 알림·자가 위생 / 터치 UI 음성안내','bh-1brd':'Main PCB · POWER PCB · Display (HMI) · 무선모듈',
+'bh-2n':'레인지후드','bh-2d':'BLDC 모터 다단 풍량과 가스·연기 센서 연동 자동 운전.','bh-2sol':'BLDC 다단 풍량 / 가스·연기 센서 연동 / LED 조명·타이머 / 정전식 터치 UI','bh-2brd':'Main PCB · POWER PCB · Display (HMI)',
+'bh-3n':'공기청정기','bh-3d':'PM2.5·VOC·온습도 멀티 센서 신호 처리와 저소음 정밀 제어.','bh-3sol':'PM·VOC·온습도 처리 / BLDC 팬 저소음 / 자동·취침 모드 / Wi-Fi·BLE 앱 연동','bh-3brd':'Main PCB · POWER PCB · Display (HMI) · 무선모듈',
+'bi-badge':'Industrial','bi-t1':'산업의 심장을 설계하다.','bi-t2':'산업용 제어 솔루션.','bi-sub':'식기세척기·제빙기·펌프·회의부스·온도제어기 등 산업용 장비 핵심 제어.',
+'bi-0n':'식기세척기','bi-0d':'호텔·외식·단체급식 등 업소용 식기세척기의 세척 사이클 정밀 제어.','bi-0sol':'세척·헹굼·건조 시퀀스 / 히터·펌프·솔레노이드 통합 / 도어 인터록·과부하 보호 / 방수 다국어 UI','bi-0brd':'Main PCB · POWER PCB · Display (HMI)',
+'bi-1n':'제빙기','bi-1d':'제빙·이빙·저장 사이클 자동 제어로 24시간 안정 얼음 공급.','bi-1sol':'컴프레서·핫가스 자동 사이클 / 저수조·증발기 센서 / 위생 모드·잔수 배수 / 원격 모니터링','bi-1brd':'Main PCB · POWER PCB · Display (HMI) · 무선모듈',
+'bi-2n':'펌프','bi-2d':'BLDC·인버터 모터 가변속 운전으로 에너지 절감과 부하 변동 동시 대응.','bi-2sol':'BLDC·인버터 모터 / 압력·유량 PID / 건운전·과부하 보호 / RS-485·Modbus','bi-2brd':'Main PCB · POWER PCB · SMPS',
+'bi-3n':'회의부스','bi-3d':'1인용·소회의용 부스의 환기·조명·공조·예약 통합 제어.','bi-3sol':'환기·조명·공조 자동 / CO₂·온습도 환기 / 터치 UI 예약 표시 / 시설 통합 관제','bi-3brd':'Main PCB · POWER PCB · Display (HMI) · 무선모듈',
+'bi-4n':'산업용 온도제어기','bi-4d':'열처리·반응공정·항온 챔버·식품 가공의 정밀 온도 제어 솔루션.','bi-4sol':'PT100·열전대 다채널 / PID 오토튜닝·다단 프로파일 / 알람·인터록·과열 / 데이터 로깅·Modbus','bi-4brd':'Main PCB · POWER PCB · Display (HMI)',
+'bm-badge':'Medical Device','bm-t1':'생명을 위한 정밀함.','bm-t2':'의료기기 제어 솔루션.','bm-sub':'원심분리기·진단기·치과용 스케일러 등 의료 장비 제어.',
+'bm-0n':'원심분리기','bm-0d':'BLDC 모터 정밀 RPM/RCF 제어와 안전 인터록·프로토콜 자동 운전.','bm-0sol':'BLDC RPM/RCF 정밀 / 불균형·도어·과속 보호 / 프로토콜 저장·자동 사이클 / 운영 로그 UI','bm-0brd':'Main PCB · POWER PCB · Display (HMI)',
+'bm-1n':'진단기','bm-1d':'체외 진단·계측·분석 장비를 위한 정밀 신호 처리 ODM 솔루션.','bm-1sol':'정밀 아날로그·ADC / 측정 시퀀스 자동화 / USB·Ethernet·시리얼 전송 / 의료기기 EMC·안전','bm-1brd':'Main PCB · POWER PCB · Display (HMI) · SMPS',
+'bm-2n':'치과용 스케일러','bm-2d':'초음파 핸드피스 주파수·출력 정밀 제어와 워터 라인 통합 운영.','bm-2sol':'초음파 주파수·출력 정밀 / 워터 솔레노이드·풋스위치 / 단계 가변·과부하 보호 / 의료 안전 규격','bm-2brd':'Main PCB · POWER PCB · Display (HMI)',
+'br-badge':'Renewable Energy','br-t1':'지속 가능한 미래.','br-t2':'신재생에너지 제어 솔루션.','br-sub':'연료전지·수소드론·리튬이온·태양광 등 친환경 에너지 제어.',
+'br-0n':'연료전지','br-0d':'스택 + BOP(Balance of Plant) 시스템 통합 제어와 안전 시퀀스.','br-0sol':'스택 전압·전류·온도 모니터링 / 수소·공기 BOP 시퀀스 / 비상정지·누설 인터록 / CAN·Modbus EMS','br-0brd':'Main PCB · POWER PCB · SMPS · 무선모듈',
+'br-1n':'수소드론','br-1d':'연료전지 기반 드론의 전력 관리·텔레메트리·인터페이스 제어.','br-1sol':'연료전지·비행 컨트롤러 인터페이스 / 전력 분배·DC/DC / 잔류 수소·온도 텔레메트리 / OTA 업데이트','br-1brd':'Main PCB · POWER PCB · 무선모듈',
+'br-2n':'리튬이온 배터리충전','br-2d':'CC-CV 다단 충전 + BMS 통신·셀 모니터링·4중 보호.','br-2sol':'CC-CV 다단 충전 / BMS CAN/UART·셀 모니터링 / OV/UV/OC/OT 4중 보호 / 충전 UI·원격','br-2brd':'Main PCB · POWER PCB · SMPS · Display (HMI)',
+'br-3n':'태양광패널','br-3d':'MPPT 알고리즘 기반 발전 최적화와 인버터·EMS 시스템 연동.','br-3sol':'MPPT 발전 최적화 / 전압·전류·온도 모니터링 / 인버터·ESS·EMS 통신 / 이상 진단·원격 모니터링','br-3brd':'Main PCB · POWER PCB · 무선모듈',
+'mc-mod-badge':'Embedded Modules','mc-mod-t1':'임베디드 모듈','mc-mod-t2':'라인업 상세.','mc-mod-sub':'메인 컨트롤 보드와 전원 제어 보드를 각각 설계·공급합니다.','mc-mod-0t':'Main PCB','mc-mod-0d':'제품 전체 동작을 제어하는 메인 컨트롤 보드. MCU·센서 인터페이스·통신·전원 관리 통합 설계.','mc-mod-1t':'POWER PCB','mc-mod-1d':'전력 변환·분배를 담당하는 전원 제어 보드. 보호 회로로 메인 PCB와 부하단 분리·보호.',
+'dp-mod-badge':'HMI Module','dp-mod-t1':'HMI 솔루션','dp-mod-t2':'라인업 상세.','dp-mod-sub':'터치 디스플레이 + UI 펌웨어 + 메인 보드 연동을 한 번에 공급합니다.','dp-mod-0t':'Display','dp-mod-0d':'TFT LCD + 정전식 터치 + UI 펌웨어. UART·SPI·I²C로 메인 보드 연동.',
+'ot-mod-badge':'Peripheral Modules','ot-mod-t1':'주변기기 라인업','ot-mod-t2':'상세 사양.','ot-mod-sub':'SMPS 전원 장치와 무선 통신 모듈을 표준품/맞춤 설계로 공급합니다.','ot-mod-0t':'SMPS','ot-mod-0d':'Switching Mode Power Supply. AC 100~240V → DC 5/12/24V 다중 출력, 4중 보호.','ot-mod-1t':'무선모듈','ot-mod-1d':'Wi-Fi · BLE · Zigbee. IoT 연동·원격 제어·OTA 펌웨어 업데이트.',
+};
+Object.entries(D3).forEach(function(p){if(!S.content[p[0]])S.content[p[0]]=p[1]});
+
 S.images={'logo-img':'','hero-bg':'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=70','ei0':'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?auto=format&fit=crop&w=600&q=60','ei1':'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=600&q=60','ei2':'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=600&q=60','pi0':'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?auto=format&fit=crop&w=600&q=60','pi1':'https://images.unsplash.com/photo-1585659722983-3a675dabf23d?auto=format&fit=crop&w=600&q=60','pi2':'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?auto=format&fit=crop&w=600&q=60','pi3':'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=600&q=60','pi4':'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=600&q=60',
 'gr-ceo-img':'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=60',
 'fc-img0':'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=600&q=60','fc-img1':'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=60','fc-img2':'https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=600&q=60','fc-img3':'https://images.unsplash.com/photo-1581092335397-9583eb92d232?auto=format&fit=crop&w=600&q=60',
