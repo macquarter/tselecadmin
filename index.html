@@ -530,7 +530,17 @@ function rPages(){
   const sitePath = SITE_PATHS[S.page];
   const refreshKey = (S._iframeKey = (S._iframeKey||0));
   const liveHtml = sitePath
-    ? `<div style="position:relative;height:78vh;min-height:520px;border-radius:8px;overflow:hidden;border:1px solid var(--bd);background:#000"><div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(0,0,0,.4);border-bottom:1px solid var(--bd);font-size:10px;color:var(--tx3)"><span>🔗 실제 사이트 미리보기 — ${SITE_BASE}${sitePath}</span><button onclick="S._iframeKey=(S._iframeKey||0)+1;R()" style="background:rgba(255,255,255,.06);border:1px solid var(--bd);color:#fff;padding:4px 10px;border-radius:5px;font-size:10px;cursor:pointer">🔄 새로고침</button></div><iframe src="${SITE_BASE}${sitePath}?edit=1&cms=${refreshKey}" id="cmsLiveFrame" style="width:100%;height:calc(100% - 36px);border:0;background:#000" loading="lazy"></iframe></div>`
+    ? (function(){
+    if(typeof S._editMode === 'undefined') S._editMode = true;
+    const isEdit = S._editMode;
+    const editParam = isEdit ? 'edit=1&' : '';
+    const borderColor = isEdit ? 'rgba(56,189,248,.5)' : 'rgba(255,255,255,.1)';
+    const bgHd = isEdit ? 'rgba(56,189,248,.08)' : 'rgba(0,0,0,.4)';
+    const modeLabel = isEdit ? '✏️ 편집 모드 (텍스트/이미지 클릭으로 수정)' : '👁️ 미리보기 모드 (편집 불가, 사이트 그대로 보기)';
+    const toggleBtn = '<button onclick="S._editMode=!S._editMode;S._iframeKey=(S._iframeKey||0)+1;R()" style="background:'+(isEdit?'#fbbf24':'#0ea5e9')+';border:0;color:'+(isEdit?'#000':'#fff')+';padding:4px 12px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;margin-right:6px">' + (isEdit?'👁️ 미리보기로':'✏️ 편집 모드로') + '</button>';
+    const refreshBtn = '<button onclick="S._iframeKey=(S._iframeKey||0)+1;R()" style="background:rgba(255,255,255,.06);border:1px solid var(--bd);color:#fff;padding:4px 10px;border-radius:5px;font-size:10px;cursor:pointer">🔄 새로고침</button>';
+    return '<div style="position:relative;height:78vh;min-height:520px;border-radius:8px;overflow:hidden;border:2px solid '+borderColor+';background:#000"><div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:'+bgHd+';border-bottom:1px solid var(--bd);font-size:10px;color:var(--tx3)"><span>'+modeLabel+' — '+SITE_BASE+sitePath+'</span><div>'+toggleBtn+refreshBtn+'</div></div><iframe src="'+SITE_BASE+sitePath+'?'+editParam+'cms='+refreshKey+'" id="cmsLiveFrame" style="width:100%;height:calc(100% - 36px);border:0;background:#000" loading="lazy"></iframe></div>';
+  })()
     : (S.page==='home' ? rLiveHome() : rLiveSub(pg));
   const fieldHtml = rFieldList(pg);
   if(S.mode==='split'){
