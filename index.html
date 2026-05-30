@@ -1164,6 +1164,15 @@ window.addEventListener('message', async function(ev){
     return;
   }
   if(_et !== 'cms-edit') return;
+  // Handle ambiguous: pick from candidates
+  if(Array.isArray(ev.data.candidates) && ev.data.candidates.length > 1){
+    const cands = ev.data.candidates;
+    const list = cands.map((c,i)=>(i+1)+') '+c.key+' ('+(c.value||'').slice(0,30)+')').join('\n');
+    const pick = window.prompt('🔗 동일한 텍스트가 ' + cands.length + '개 키에 매핑됨. 편집할 키 번호:\n\n' + list, '1');
+    const idx = parseInt(pick) - 1;
+    if(isNaN(idx) || idx < 0 || idx >= cands.length) return;
+    ev.data.key = cands[idx].key;
+  }
   const key = ev.data.key;
   const current = ev.data.currentValue || S.content[key] || '';
   if(!key) return;
