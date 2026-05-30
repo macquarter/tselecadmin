@@ -397,6 +397,7 @@ async function delDlFromFs(id){
 }
 
 const PAGES={
+  'cms-i18n':{name:'🔗 CMS 페어링 (사이트 i18n 전체)',secs:[]},
   home:{name:'홈 (메인)',secs:[
     {n:'히어로',f:['hero-badge','hero-t1','hero-t2','hero-sub'],i:['hero-bg']},
     {n:'고객사',f:['cl-title'],cl:true},
@@ -630,6 +631,7 @@ function rPages(){
   }
   else if(S.mode==='live') content=liveHtml;
   else content=fieldHtml;
+  if(S.page==='cms-i18n') return tabs+mt+warn+rCmsPage();
   return tabs+mt+warn+content;
 }
 
@@ -657,6 +659,67 @@ function rFieldList(pg){
     h+=`</div></div>`;
   });
   return h;
+}
+
+// ─── CMS PAIRING (사이트 i18n 전체) ───
+function rCmsPage(){
+  const dotted = Object.keys(S.content).filter(k=>k.includes('.')).sort();
+  const groups = {};
+  dotted.forEach(k=>{
+    const top = k.split('.')[0];
+    (groups[top] = groups[top]||[]).push(k);
+  });
+  const groupOrder = ['nav','footer','common','home','business','lang','greeting','history','process','about','hero','expertise','contact','faq','news','kpi','homeProducts','productsPage','bizHome','bizIndustrial','bizMedical','bizRenewable','historyPage','facility','mainCtrl','displayPage','orgPage','othersPage','directionsPage','newsPage','dlPage'];
+  const orderedTops = [...groupOrder.filter(t=>groups[t]), ...Object.keys(groups).filter(t=>!groupOrder.includes(t))];
+  const cls = S.edit?'editing':'';
+  const seedBtn = `<div style="background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.15);border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:13px;font-weight:700;margin-bottom:4px">🔗 사이트 i18n과 1:1 페어링</div><div style="font-size:11px;color:var(--tx3);line-height:1.5">웹사이트의 모든 t() 호출이 여기서 수정한 값으로 즉시 교체됩니다. 키는 사이트의 i18n 경로(<code>nav.company</code> 등) 그대로입니다.</div></div><button onclick="reseedFromSite()" style="background:var(--ac);border:none;color:#fff;padding:8px 14px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">🔄 사이트 기준으로 재시드</button></div>`;
+  let h = seedBtn;
+  if(dotted.length===0){
+    h += '<div style="padding:40px;text-align:center;color:var(--tx3);font-size:12px">아직 i18n 키가 시드되지 않았습니다. 위 "사이트 기준으로 재시드" 버튼을 클릭하세요.</div>';
+    return h;
+  }
+  orderedTops.forEach(top=>{
+    const keys = groups[top];
+    h += `<div class="sp"><div class="sp-hd"><h3>${top} <span style="font-size:9px;color:var(--tx4);font-weight:400;margin-left:6px">${keys.length}개</span></h3></div><div class="sp-bd ${cls}">`;
+    keys.forEach(id=>{
+      const leaf = id.split('.').slice(1).join('.');
+      h += `<div class="fr"><div class="fr-id">${id} <span style="font-size:8px;color:var(--tx4);margin-left:4px">${leaf}</span></div><div class="fr-val">${E(id)}</div></div>`;
+    });
+    h += `</div></div>`;
+  });
+  return h;
+}
+async function reseedFromSite(){
+  if(!confirm('사이트 i18n 기준으로 Firestore siteContent/text를 전체 재시드합니다. 기존 어드민에서 수정한 dotted 키들이 덮어쓰여집니다. 계속할까요?')) return;
+  toast('🔄 재시드 중...');
+  try{
+    const r = await fetch('https://raw.githubusercontent.com/macquarter/tselecv4/main/src/locales/ko.json');
+    const ko = await r.json();
+    const flat = {};
+    (function f(o,p){
+      if(o && typeof o==='object' && !Array.isArray(o)){
+        Object.entries(o).forEach(([k,v])=>f(v, p?p+'.'+k:k));
+      } else if (typeof o === 'string'){
+        flat[p] = o;
+      } else if (Array.isArray(o)){
+        o.forEach((v,i)=>f(v, p+'.'+i));
+      }
+    })(ko,'');
+    if(!FB.token) await fbAuth();
+    await fsDel('siteContent/text');
+    const ok = await fsPatch('siteContent/text', flat);
+    if(ok){
+      Object.keys(S.content).forEach(k=>{ if(k.includes('.')) delete S.content[k]; });
+      Object.assign(S.content, flat);
+      toast(`✅ ${Object.keys(flat).length}개 키 재시드 완료`);
+      R();
+    } else {
+      toast('⚠️ 재시드 실패');
+    }
+  }catch(e){
+    console.error(e);
+    toast('⚠️ 재시드 오류: '+e.message);
+  }
 }
 
 // ─── LIVE PREVIEW for sub-pages ───
