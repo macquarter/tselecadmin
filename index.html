@@ -517,7 +517,21 @@ function rPages(){
   const mt=`<div class="mtog"><button class="mbtn ${S.mode==='split'?'on':''}" onclick="sm('split')"><span class="dot"></span>🔀 분할 (라이브 + 필드)</button><button class="mbtn ${S.mode==='live'?'on':''}" onclick="sm('live')"><span class="dot"></span>📺 라이브 프리뷰</button><button class="mbtn ${S.mode==='field'?'on':''}" onclick="sm('field')"><span class="dot"></span>📝 필드 리스트</button></div>`;
   let warn='';if(!S.edit)warn=`<div style="background:rgba(251,191,36,.04);border:1px solid rgba(251,191,36,.1);border-radius:7px;padding:7px 10px;margin-bottom:8px;font-size:9px;color:var(--am)">⚠️ 사이드바 <b>편집 모드</b>를 활성화하세요</div>`;
   let content='';
-  const liveHtml = S.page==='home' ? rLiveHome() : rLiveSub(pg);
+  const SITE_BASE = 'https://tselecv4.vercel.app';
+  const SITE_PATHS = {
+    home:'/', greeting:'/greeting', history:'/history', facility:'/facility',
+    org:'/organization', directions:'/directions',
+    'biz-home':'/business/home-appliance', 'biz-industrial':'/business/industrial',
+    'biz-medical':'/business/medical', 'biz-renewable':'/business/renewable',
+    business:'/business/home-appliance',
+    products:'/products', mainctrl:'/main-controller', display:'/display',
+    others:'/others', news:'/news', downloads:'/downloads', process:'/process',
+  };
+  const sitePath = SITE_PATHS[S.page];
+  const refreshKey = (S._iframeKey = (S._iframeKey||0));
+  const liveHtml = sitePath
+    ? `<div style="position:relative;height:78vh;min-height:520px;border-radius:8px;overflow:hidden;border:1px solid var(--bd);background:#000"><div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(0,0,0,.4);border-bottom:1px solid var(--bd);font-size:10px;color:var(--tx3)"><span>🔗 실제 사이트 미리보기 — ${SITE_BASE}${sitePath}</span><button onclick="S._iframeKey=(S._iframeKey||0)+1;R()" style="background:rgba(255,255,255,.06);border:1px solid var(--bd);color:#fff;padding:4px 10px;border-radius:5px;font-size:10px;cursor:pointer">🔄 새로고침</button></div><iframe src="${SITE_BASE}${sitePath}?cms=${refreshKey}" style="width:100%;height:calc(100% - 36px);border:0;background:#000" loading="lazy"></iframe></div>`
+    : (S.page==='home' ? rLiveHome() : rLiveSub(pg));
   const fieldHtml = rFieldList(pg);
   if(S.mode==='split'){
     const tip = S.edit ? '' : '<div style="padding:8px 12px;background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.15);border-radius:6px;font-size:10px;color:var(--am);margin-bottom:8px">💡 좌측 라이브 프리뷰의 텍스트/이미지를 직접 클릭하거나, 우측 필드 리스트에서 편집할 수 있습니다 (편집 모드 활성 시)</div>';
