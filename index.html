@@ -1158,7 +1158,24 @@ window.addEventListener('message', async function(ev){
   if(_et === 'cms-edit-image'){
     const ik = ev.data.key; if(!ik) return;
     const cur = ev.data.currentSrc || S.images[ik] || '';
-    const nu = window.prompt('🖼️ 이미지 변경: ' + ik + '\n\n현재 경로:\n' + cur + '\n\n새 이미지 URL 입력 (예: https://... 또는 /images/...):', cur);
+    const nu0 = window.prompt('🖼️ 이미지 변경: ' + ik + '\n\n현재 경로:\n' + cur + '\n\n새 이미지 URL을 입력하세요.\n\n✅ 사용 가능 형식:\n  • https://... (직접 이미지 URL, .jpg/.png 등)\n  • /images/... (사이트 내부 이미지)\n  • Google Drive 공유 링크 (자동 변환됨)\n  • placehold.co 같은 placeholder\n\n❌ 사용 불가:\n  • Google Drive "/view" URL (자동 변환 처리됨)\n  • HTML 페이지 URL', cur);
+  let nu = nu0;
+  if(nu){
+    // Auto-convert Google Drive share URL → direct image URL
+    const gdMatch = nu.match(/drive\.google\.com\/file\/d\/([^\/]+)\//);
+    if(gdMatch){
+      nu = 'https://drive.google.com/uc?export=view&id=' + gdMatch[1];
+      console.log('[CMS] Google Drive URL 자동 변환:', nu0, '→', nu);
+    }
+    // Warn if URL doesn't look like an image
+    const isImageUrl = /\.(jpg|jpeg|png|gif|webp|svg|avif)(\?|$)/i.test(nu) 
+      || nu.includes('placehold.co') 
+      || nu.includes('drive.google.com/uc') 
+      || nu.startsWith('/');
+    if(!isImageUrl){
+      if(!confirm('⚠️ 이 URL은 이미지가 아닐 수 있습니다.\n\n' + nu + '\n\n그래도 적용하시겠습니까?')) return;
+    }
+  }
     if(nu === null || nu === cur) return;
     S.images[ik] = nu;
     (async function(){
