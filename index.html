@@ -302,8 +302,8 @@ body.light .split-hd{background:rgba(0,0,0,.03);color:#000}
 <div style="background:#111;border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:40px;width:340px;text-align:center">
 <div style="display:flex;flex-direction:column;line-height:.82;font-weight:900;font-size:32px;letter-spacing:-.12em;text-transform:uppercase;color:#fff;margin-bottom:6px"><span>TSE</span><span>LEC</span></div>
 <div style="font-size:10px;color:#38bdf8;font-weight:700;margin-bottom:28px;letter-spacing:.1em">ADMIN DASHBOARD</div>
-<input id="loginId" placeholder="아이디" style="width:100%;padding:10px 14px;margin-bottom:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#fff;font-family:inherit;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')document.getElementById('loginPw').focus()"/>
-<input id="loginPw" type="password" placeholder="비밀번호" style="width:100%;padding:10px 14px;margin-bottom:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#fff;font-family:inherit;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')doLogin()"/>
+<input id="loginId" type="email" autocomplete="username" placeholder="이메일 (Google 계정)" style="width:100%;padding:10px 14px;margin-bottom:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#fff;font-family:inherit;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')document.getElementById('loginPw').focus()"/>
+<input id="loginPw" type="password" autocomplete="current-password" placeholder="비밀번호" style="width:100%;padding:10px 14px;margin-bottom:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#fff;font-family:inherit;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')doLogin()"/>
 <div id="loginErr" style="font-size:10px;color:#f87171;min-height:18px;margin-bottom:8px"></div>
 <button onclick="doLogin()" style="width:100%;padding:11px;background:linear-gradient(135deg,#38bdf8,#818cf8);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">로그인</button>
 </div>
@@ -317,14 +317,17 @@ body.light .split-hd{background:rgba(0,0,0,.03);color:#000}
 
 <script>
 // === Firebase REST API (Named Database) ===
-const FB={project:'gen-lang-client-0276589179',db:'ai-studio-e97c649f-c50c-4cd5-8952-6640d34f2444',key:'AIzaSyDmgOBu3kPUGzff_CyR647kIbN4F91seJE',token:null};
+const FB={project:'gen-lang-client-0276589179',db:'ai-studio-e97c649f-c50c-4cd5-8952-6640d34f2444',key:'AIzaSyDmgOBu3kPUGzff_CyR647kIbN4F91seJE',token:null,refresh:null,exp:0};
 FB.base=`https://firestore.googleapis.com/v1/projects/${FB.project}/databases/${FB.db}/documents`;
 function toFv(v){if(v===null||v===undefined)return{nullValue:null};if(v instanceof Date)return{timestampValue:v.toISOString()};if(typeof v==='string')return{stringValue:v};if(typeof v==='number')return Number.isInteger(v)?{integerValue:String(v)}:{doubleValue:v};if(typeof v==='boolean')return{booleanValue:v};if(Array.isArray(v))return{arrayValue:{values:v.map(toFv)}};if(typeof v==='object')return{mapValue:{fields:Object.fromEntries(Object.entries(v).map(([k,val])=>[k,toFv(val)]))}};return{stringValue:String(v)}}
 function fromFv(v){if(!v)return null;if('stringValue' in v)return v.stringValue;if('integerValue' in v)return parseInt(v.integerValue);if('doubleValue' in v)return v.doubleValue;if('booleanValue' in v)return v.booleanValue;if('nullValue' in v)return null;if('arrayValue' in v)return(v.arrayValue.values||[]).map(fromFv);if('mapValue' in v)return Object.fromEntries(Object.entries(v.mapValue.fields||{}).map(([k,val])=>[k,fromFv(val)]));if('timestampValue' in v)return v.timestampValue;return null}
 function toFd(obj){return{fields:Object.fromEntries(Object.entries(obj).map(([k,v])=>[k,toFv(v)]))}}
 function fromFd(doc){if(!doc||!doc.fields)return{};const o={};Object.entries(doc.fields).forEach(([k,v])=>{o[k]=fromFv(v)});return o}
 const fh=()=>({'Content-Type':'application/json',...(FB.token?{Authorization:`Bearer ${FB.token}`}:{})});
-async function fbAuth(){try{const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB.key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{"returnSecureToken":true}'});const d=await r.json();FB.token=d.idToken;return d.idToken}catch(e){console.error('Auth error:',e);return null}}
+async function fbSignIn(email,pw){const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FB.key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pw,returnSecureToken:true})});const d=await r.json();if(!r.ok||!d.idToken)throw new Error((d.error&&d.error.message)||'LOGIN_FAIL');FB.token=d.idToken;FB.refresh=d.refreshToken;FB.exp=Date.now()+(parseInt(d.expiresIn||'3600',10)*1000);try{sessionStorage.setItem('tselec-rt',d.refreshToken)}catch(e){}return d.idToken}
+async function fbRefresh(){let rt=FB.refresh;if(!rt){try{rt=sessionStorage.getItem('tselec-rt')}catch(e){rt=null}}if(!rt)return null;try{const r=await fetch(`https://securetoken.googleapis.com/v1/token?key=${FB.key}`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(rt)});const d=await r.json();if(!r.ok||!d.id_token){FB.token=null;FB.refresh=null;try{sessionStorage.removeItem('tselec-rt')}catch(e){}return null}FB.token=d.id_token;FB.refresh=d.refresh_token;FB.exp=Date.now()+(parseInt(d.expires_in||'3600',10)*1000);try{sessionStorage.setItem('tselec-rt',d.refresh_token)}catch(e){}return d.id_token}catch(e){console.error('Refresh error:',e);return null}}
+async function ensureToken(){if(FB.token&&Date.now()<FB.exp-300000)return FB.token;return await fbRefresh()}
+async function fbAuth(){return await ensureToken()}
 async function fsGet(path){try{const r=await fetch(`${FB.base}/${path}?key=${FB.key}`,{headers:fh()});if(!r.ok){console.warn('fsGet fail:',path,r.status);return null}return fromFd(await r.json())}catch(e){console.error('fsGet error:',path,e);return null}}
 async function fsPatch(path,data){try{const r=await fetch(`${FB.base}/${path}?key=${FB.key}`,{method:'PATCH',headers:fh(),body:JSON.stringify(toFd(data))});if(!r.ok)console.warn('fsPatch fail:',path,r.status,await r.text());return r.ok}catch(e){console.error('fsPatch error:',e);return false}}
 async function fsList(col){try{const r=await fetch(`${FB.base}:runQuery?key=${FB.key}`,{method:'POST',headers:fh(),body:JSON.stringify({structuredQuery:{from:[{collectionId:col}],limit:200}})});if(!r.ok){console.warn('fsList fail:',col,r.status);return[]}const d=await r.json();return(Array.isArray(d)?d:[]).filter(x=>x.document).map(x=>{const doc=x.document;const o=fromFd(doc);o._id=doc.name.split('/').pop();o._createTime=doc.createTime||'';return o})}catch(e){console.error('fsList error:',col,e);return[]}}
@@ -335,7 +338,7 @@ async function fsDel(path){try{const r=await fetch(`${FB.base}/${path}?key=${FB.
 async function loadFromFirestore(){
   try{
     toast('데이터 로딩중...');
-    await fbAuth();
+    await ensureToken();
     const[text,media,clients,settings,newsItems,inqItems,chatItems,dlItems]=await Promise.all([
       fsGet('siteContent/text'),fsGet('siteContent/media'),fsGet('siteContent/clients'),fsGet('siteContent/settings'),
       fsList('news'),fsList('inquiries'),fsList('chatInquiries'),fsList('downloads')
@@ -356,7 +359,7 @@ async function loadFromFirestore(){
 async function saveToFirestore(){
   try{
     toast('저장 중...');
-    if(!FB.token)await fbAuth();
+    await ensureToken();
     const ok=await Promise.all([
       fsPatch('siteContent/text',S.content),
       fsPatch('siteContent/media',{images:S.images,videos:S.videos}),
@@ -369,30 +372,30 @@ async function saveToFirestore(){
 
 // Update inquiry status in Firestore
 async function updateInqStatus(id,status){
-  if(!FB.token)await fbAuth();
+  await ensureToken();
   await fsPatch('inquiries/'+id,{status:status});
 }
 
 // Update chatbot inquiry status in Firestore
 async function updateChatStatus(id,status){
-  if(!FB.token)await fbAuth();
+  await ensureToken();
   await fsPatch('chatInquiries/'+id,{status:status});
 }
 
 // Add news to Firestore
 async function addNewsToFs(data){
-  if(!FB.token)await fbAuth();
+  await ensureToken();
   return await fsAdd('news',{...data,createdAt:new Date()});
 }
 
 // Delete news from Firestore
 async function delNewsFromFs(id){
-  if(!FB.token)await fbAuth();
+  await ensureToken();
   return await fsDel('news/'+id);
 }
 // Delete download from Firestore
 async function delDlFromFs(id){
-  if(!FB.token)await fbAuth();
+  await ensureToken();
   return await fsDel('downloads/'+id);
 }
 
@@ -1038,8 +1041,8 @@ function showBM(type,idx){
     _pf=null;_pfn='';
     if(isE)S.boardOpt[type].openId=ni.id;
     // Sync to Firestore
-    if(isN){(async()=>{try{if(!FB.token)await fbAuth();if(isE&&ni.id){await fsPatch('news/'+ni.id,{title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:ni.views})}else{const fid=await fsAdd('news',{title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:0,createdAt:new Date()});if(fid)ni.id=fid}toast('✅ Firestore 동기화 완료')}catch(e){console.error('News sync error:',e);toast('⚠️ 로컬 저장됨 (동기화 실패)')}})()}
-    else{(async()=>{try{if(!FB.token)await fbAuth();const dlData={title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:ni.views,fileName:ni.file||''};if(ni.fileData)dlData.fileData=ni.fileData;if(isE&&ni.id){await fsPatch('downloads/'+ni.id,dlData)}else{dlData.createdAt=new Date();dlData.views=0;const fid=await fsAdd('downloads',dlData);if(fid)ni.id=fid}toast('✅ 자료실 Firestore 동기화 완료')}catch(e){console.error('DL sync error:',e);toast('⚠️ 로컬 저장됨 (동기화 실패)')}})()}
+    if(isN){(async()=>{try{await ensureToken();if(isE&&ni.id){await fsPatch('news/'+ni.id,{title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:ni.views})}else{const fid=await fsAdd('news',{title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:0,createdAt:new Date()});if(fid)ni.id=fid}toast('✅ Firestore 동기화 완료')}catch(e){console.error('News sync error:',e);toast('⚠️ 로컬 저장됨 (동기화 실패)')}})()}
+    else{(async()=>{try{await ensureToken();const dlData={title:ni.title,content:ni.content,category:ni.cat,author:ni.author,views:ni.views,fileName:ni.file||''};if(ni.fileData)dlData.fileData=ni.fileData;if(isE&&ni.id){await fsPatch('downloads/'+ni.id,dlData)}else{dlData.createdAt=new Date();dlData.views=0;const fid=await fsAdd('downloads',dlData);if(fid)ni.id=fid}toast('✅ 자료실 Firestore 동기화 완료')}catch(e){console.error('DL sync error:',e);toast('⚠️ 로컬 저장됨 (동기화 실패)')}})()}
     R();toast(isE?'수정 완료':'등록 완료');
   });
 }
@@ -1143,13 +1146,13 @@ function exJ(){const d=JSON.stringify({content:S.content,images:S.images,videos:
 
 // Load saved theme
 // Login system
-function doLogin(){const id=document.getElementById('loginId').value.trim(),pw=document.getElementById('loginPw').value;if(id==='tsadmin'&&pw==='admin'){try{sessionStorage.setItem('tselec-auth','1')}catch(e){}showApp()}else{document.getElementById('loginErr').textContent='아이디 또는 비밀번호가 올바르지 않습니다'}}
-function doLogout(){try{sessionStorage.removeItem('tselec-auth')}catch(e){}location.reload()}
+async function doLogin(){const id=document.getElementById('loginId').value.trim(),pw=document.getElementById('loginPw').value;const errEl=document.getElementById('loginErr');errEl.textContent='';if(!id||!pw){errEl.textContent='이메일과 비밀번호를 입력하세요';return}const btn=document.querySelector('#loginOverlay button');if(btn){btn.disabled=true;btn.textContent='로그인 중...'}try{await fbSignIn(id,pw);showApp()}catch(e){const m=String(e.message||'');let msg='이메일 또는 비밀번호가 올바르지 않습니다';if(m.indexOf('TOO_MANY_ATTEMPTS')>=0)msg='로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요';else if(m.indexOf('USER_DISABLED')>=0)msg='비활성화된 계정입니다';errEl.textContent=msg}finally{if(btn){btn.disabled=false;btn.textContent='로그인'}}}
+function doLogout(){try{sessionStorage.removeItem('tselec-auth');sessionStorage.removeItem('tselec-rt')}catch(e){}FB.token=null;FB.refresh=null;location.reload()}
 function showApp(){document.getElementById('loginOverlay').style.display='none';document.getElementById('appShell').style.display='flex';R();loadFromFirestore()}
-function checkAuth(){try{return sessionStorage.getItem('tselec-auth')==='1'}catch(e){return false}}
+function checkAuth(){try{return !!sessionStorage.getItem('tselec-rt')}catch(e){return false}}
 
 try{const st=localStorage.getItem('tselec-theme');if(st){S.theme=st;if(st==='light')document.body.classList.add('light')}}catch(e){}
-if(checkAuth()){showApp()}else{document.getElementById('loginOverlay').style.display='flex'}
+if(checkAuth()){fbRefresh().then(function(t){if(t){showApp()}else{try{sessionStorage.removeItem('tselec-rt')}catch(e){}document.getElementById('loginOverlay').style.display='flex'}})}else{document.getElementById('loginOverlay').style.display='flex'}
 document.addEventListener('click',e=>{const a=e.target.closest('a');if(a){const h=a.getAttribute('href');if(h&&!h.startsWith('javascript:')&&!h.startsWith('blob:')&&!h.startsWith('data:'))e.preventDefault()}},true);
 
 // === CMS edit-mode bridge (v9) — receive clicks from iframe ===
@@ -1168,9 +1171,9 @@ window.addEventListener('message', async function(ev){
       console.log('[CMS] Google Drive URL 자동 변환:', nu0, '→', nu);
     }
     // Warn if URL doesn't look like an image
-    const isImageUrl = /\.(jpg|jpeg|png|gif|webp|svg|avif)(\?|$)/i.test(nu) 
-      || nu.includes('placehold.co') 
-      || nu.includes('drive.google.com/uc') 
+    const isImageUrl = /\.(jpg|jpeg|png|gif|webp|svg|avif)(\?|$)/i.test(nu)
+      || nu.includes('placehold.co')
+      || nu.includes('drive.google.com/uc')
       || nu.startsWith('/');
     if(!isImageUrl){
       if(!confirm('⚠️ 이 URL은 이미지가 아닐 수 있습니다.\n\n' + nu + '\n\n그래도 적용하시겠습니까?')) return;
@@ -1180,7 +1183,7 @@ window.addEventListener('message', async function(ev){
     S.images[ik] = nu;
     (async function(){
       try{
-        if(typeof FB !== 'undefined' && !FB.token) await fbAuth();
+        if(typeof ensureToken==='function') await ensureToken();
         await fsPatch('siteContent/media', {images: S.images, videos: S.videos||{}});
         if(typeof toast === 'function') toast('🖼️ 이미지 저장됨: ' + ik);
         const fr = document.getElementById('cmsLiveFrame');
@@ -1209,7 +1212,7 @@ window.addEventListener('message', async function(ev){
   const dotted = {};
   Object.entries(S.content).forEach(function(p){ if(p[0].indexOf('.') !== -1 && typeof p[1] === 'string') dotted[p[0]] = p[1]; });
   try{
-    if(typeof FB !== 'undefined' && !FB.token) await fbAuth();
+    if(typeof ensureToken==='function') await ensureToken();
     await fsDel('siteContent/text');
     const ok = await fsPatch('siteContent/text', dotted);
     if(ok){
