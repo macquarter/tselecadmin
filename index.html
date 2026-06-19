@@ -339,10 +339,11 @@ async function loadFromFirestore(){
   try{
     toast('데이터 로딩중...');
     await ensureToken();
-    const[text,media,clients,settings,newsItems,inqItems,chatItems,dlItems]=await Promise.all([
-      fsGet('siteContent/text'),fsGet('siteContent/media'),fsGet('siteContent/clients'),fsGet('siteContent/settings'),
+    const[text,media,clients,settings,chatbot,newsItems,inqItems,chatItems,dlItems]=await Promise.all([
+      fsGet('siteContent/text'),fsGet('siteContent/media'),fsGet('siteContent/clients'),fsGet('siteContent/settings'),fsGet('siteContent/chatbot'),
       fsList('news'),fsList('inquiries'),fsList('chatInquiries'),fsList('downloads')
     ]);
+    S.chatKB.entries=parseChatKB(chatbot&&typeof chatbot.raw==='string'?chatbot.raw:'');S.chatKB.loaded=true;
     if(text)Object.entries(text).forEach(([k,v])=>{if(typeof v==='string')S.content[k]=v});
     if(media){if(media.images&&typeof media.images==='object')Object.entries(media.images).forEach(([k,v])=>{if(v)S.images[k]=v});if(media.videos&&typeof media.videos==='object')Object.entries(media.videos).forEach(([k,v])=>{if(v)S.videos[k]=v})}
     if(clients&&Array.isArray(clients.list))S.clients=clients.list;
@@ -411,6 +412,7 @@ inquiries:[],
 boardOpt:{news:{showDate:true,showViews:true,filter:'전체',search:'',openId:null},dl:{showDate:true,showViews:true,filter:'전체',search:'',openId:null}},
 inqOpt:{filter:'전체',openId:null,replyText:{},replyStatus:{}},
 chatOpt:{filter:'전체',openId:null},
+chatKB:{entries:[],loaded:false,saving:false},
 };
 
 // Defaults
@@ -488,7 +490,7 @@ $('#vidUp').addEventListener('change',function(e){const f=e.target.files[0];if(!
 function showModal(t,b,cb){$('#modalR').innerHTML=`<div class="modal-bg" onclick="clMd()"><div class="modal" onclick="event.stopPropagation()"><h3>${t}</h3>${b}<div class="m-acts"><button class="cancel" onclick="clMd()">취소</button><button class="ok" onclick="window._mcb()">확인</button></div></div></div>`;window._mcb=()=>{cb();clMd()}}
 function clMd(){$('#modalR').innerHTML=''}
 
-const NAV=[{id:'dashboard',lb:'📊 대시보드'},{id:'pages',lb:'🖥️ 페이지 편집'},{id:'inquiries',lb:'📬 문의 관리',bg:()=>S.inquiries.filter(i=>i.st==='new').length},{id:'chatbot',lb:'💬 챗봇 문의',bg:()=>S.chatInquiries.filter(i=>i.st==='new').length},{id:'news-b',lb:'📰 공지사항'},{id:'dl-b',lb:'📁 자료실'},{id:'settings',lb:'⚙️ 설정'}];
+const NAV=[{id:'dashboard',lb:'📊 대시보드'},{id:'pages',lb:'🖥️ 페이지 편집'},{id:'inquiries',lb:'📬 문의 관리',bg:()=>S.inquiries.filter(i=>i.st==='new').length},{id:'chatbot',lb:'💬 챗봇 문의',bg:()=>S.chatInquiries.filter(i=>i.st==='new').length},{id:'chatbot-learn',lb:'🧠 챗봇 학습'},{id:'news-b',lb:'📰 공지사항'},{id:'dl-b',lb:'📁 자료실'},{id:'settings',lb:'⚙️ 설정'}];
 function sw(v){S.view=v;if(v!=='pages')S.edit=false;R()}
 function te(){S.edit=!S.edit;R()}
 function sp(p){S.page=p;R()}
@@ -501,12 +503,13 @@ function R(){
   $('#sbHd').innerHTML=`${S.edit?`<div class="edi" style="display:inline-flex;align-items:center" onclick="event.stopPropagation();sImgUp('logo-img')">${sbLogoHtml}</div>`:sbLogoHtml}<span style="font-size:8px;color:var(--ac);font-weight:700;margin-left:auto">ADMIN</span>`;
   let nav='';NAV.forEach(n=>{const b=n.bg?n.bg():0;nav+=`<button class="nb ${S.view===n.id?'on':''}" onclick="sw('${n.id}')">${n.lb}${b?`<span class="bdg">${b}</span>`:''}</button>`});$('#sbNav').innerHTML=nav;
   let bot='';if(S.view==='pages')bot+=`<button class="etb ${S.edit?'on':''}" onclick="te()">${S.edit?'👁️ 미리보기':'✏️ 편집 모드'}</button>`;bot+=`<button class="svb" onclick="saveToFirestore()">💾 저장</button>`;bot+=`<button style="width:100%;margin-top:4px;padding:7px;border-radius:7px;font-size:10px;font-weight:600;border:1px solid var(--bd);background:var(--btn-bg);color:var(--tx4);font-family:inherit;cursor:pointer" onclick="doLogout()">🔓 로그아웃</button>`;$('#sbBot').innerHTML=bot;
-  const tt={dashboard:'대시보드',pages:'페이지 편집',inquiries:'문의 관리',chatbot:'챗봇 문의','news-b':'공지사항','dl-b':'자료실',settings:'설정'};$('#tbT').textContent=tt[S.view]||'';$('#eiTag').style.display=S.edit?'':'none';
+  const tt={dashboard:'대시보드',pages:'페이지 편집',inquiries:'문의 관리',chatbot:'챗봇 문의','chatbot-learn':'챗봇 학습','news-b':'공지사항','dl-b':'자료실',settings:'설정'};$('#tbT').textContent=tt[S.view]||'';$('#eiTag').style.display=S.edit?'':'none';
   const mc=$('#mc');
   if(S.view==='dashboard')mc.innerHTML=rDash();
   else if(S.view==='pages')mc.innerHTML=rPages();
   else if(S.view==='inquiries')mc.innerHTML=rInq();
   else if(S.view==='chatbot')mc.innerHTML=rChat();
+  else if(S.view==='chatbot-learn')mc.innerHTML=rChatLearn();
   else if(S.view==='news-b')mc.innerHTML=rBoard('news','공지사항',S.news);
   else if(S.view==='dl-b')mc.innerHTML=rBoard('dl','자료실',S.downloads);
   else if(S.view==='settings')mc.innerHTML=rSet();
@@ -1090,6 +1093,41 @@ function rInq(){
         ${filtered.map(it=>`<tr style="cursor:pointer" onclick="S.inqOpt.openId='${it.id}';R()"><td style="font-weight:500;font-size:11px">${it.nm}</td><td style="font-size:10px;color:var(--tx3)">${it.co}</td><td style="font-size:11px;max-width:300px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap">${it.msg}</td><td><span style="font-size:8px;font-weight:700;padding:3px 8px;border-radius:99px;${it.st==='new'?'background:rgba(56,189,248,.08);color:var(--ac)':it.st==='replied'?'background:rgba(52,211,153,.08);color:var(--gn)':'background:rgba(251,191,36,.08);color:var(--am)'}">${stMap[it.st]}</span></td><td style="font-size:9px;color:var(--tx5)">${it.date}</td></tr>`).join('')}
         </tbody>
       </table>
+    </div>
+  </div>`;
+}
+// ─────── 챗봇 학습 (siteContent/chatbot.raw) ───────
+// 저장 포맷: 항목은 \n---\n 로 구분, 첫 줄=키워드(쉼표), 나머지=답변 — 사이트 챗봇 파서와 동일
+function parseChatKB(raw){return(raw||'').split(/\n\s*---\s*\n/).map(b=>b.trim()).filter(Boolean).map(block=>{const lines=block.split('\n');return{kw:(lines[0]||'').trim(),ans:lines.slice(1).join('\n').trim()}})}
+function serializeChatKB(entries){return entries.filter(e=>(e.kw||'').trim()||(e.ans||'').trim()).map(e=>`${(e.kw||'').trim()}\n${(e.ans||'').trim()}`).join('\n---\n')}
+function ckbSet(i,field,val){if(S.chatKB.entries[i])S.chatKB.entries[i][field]=val}
+function ckbAdd(){S.chatKB.entries.push({kw:'',ans:''});R()}
+function ckbRemove(i){if(!confirm('이 학습 항목을 삭제할까요?'))return;S.chatKB.entries.splice(i,1);R()}
+async function ckbSave(){S.chatKB.saving=true;R();try{await ensureToken();const raw=serializeChatKB(S.chatKB.entries);const ok=await fsPatch('siteContent/chatbot',{raw:raw});S.chatKB.saving=false;if(ok){S.chatKB.entries=parseChatKB(raw);toast('✅ 저장 완료 — 챗봇에 즉시 반영됨')}else toast('⚠️ 저장 실패 — 다시 시도해주세요')}catch(e){console.error('chatKB save error:',e);S.chatKB.saving=false;toast('❌ 저장 실패')}R()}
+function rChatLearn(){
+  const EN=S.chatKB.entries;
+  const cnt=EN.filter(e=>(e.kw||'').trim()||(e.ans||'').trim()).length;
+  return `<div style="max-width:860px;margin:0 auto">
+    <div style="background:linear-gradient(135deg,rgba(56,189,248,.08),rgba(129,140,248,.05));border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🧠</span><div style="font-size:14px;font-weight:800">챗봇 학습 (지식 추가·수정)</div></div>
+      <div style="font-size:11px;color:var(--tx3);margin-top:6px;line-height:1.6">고객이 챗봇에게 물어볼 만한 <b style="color:var(--ac)">질문 키워드</b>와 그에 대한 <b style="color:var(--gn)">답변</b>을 등록하세요. 저장하면 사이트 챗봇에 <b>즉시 반영</b>됩니다. 현재 <b style="color:var(--ac)">${cnt}</b>개 학습됨.</div>
+    </div>
+    <div style="display:grid;gap:12px">
+      ${EN.length===0?`<div style="text-align:center;padding:32px;color:var(--tx4);font-size:12px;border:1px dashed var(--bd);border-radius:10px">아직 등록된 학습 항목이 없습니다.<br/>아래 <b style="color:var(--ac)">＋ 항목 추가</b> 버튼으로 시작하세요.</div>`:''}
+      ${EN.map((e,i)=>`<div style="background:var(--card-bg);border:1px solid var(--bd);border-radius:10px;padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:10px;font-weight:700;color:var(--tx4)">항목 ${i+1}</span>
+          <button onclick="ckbRemove(${i})" style="padding:3px 9px;border-radius:6px;border:1px solid rgba(248,113,113,.25);background:rgba(248,113,113,.06);color:#f87171;font-size:10px;font-weight:600;font-family:inherit;cursor:pointer">🗑 삭제</button>
+        </div>
+        <label style="font-size:9px;font-weight:700;color:var(--ac);display:block;margin-bottom:3px">질문 키워드 (쉼표로 구분)</label>
+        <input value="${(e.kw||'').replace(/"/g,'&quot;')}" oninput="ckbSet(${i},'kw',this.value)" placeholder="예: 가격, 견적, 단가, 비용" style="width:100%;padding:8px 10px;border-radius:7px;border:1px solid var(--bd);background:var(--btn-bg);color:var(--tx1);font-size:12px;font-family:inherit;margin-bottom:10px;box-sizing:border-box"/>
+        <label style="font-size:9px;font-weight:700;color:var(--gn);display:block;margin-bottom:3px">답변 내용</label>
+        <textarea oninput="ckbSet(${i},'ans',this.value)" placeholder="고객에게 보여줄 답변을 입력하세요." style="width:100%;min-height:84px;padding:8px 10px;border-radius:7px;border:1px solid var(--bd);background:var(--btn-bg);color:var(--tx1);font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box">${(e.ans||'').replace(/</g,'&lt;')}</textarea>
+      </div>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="ckbAdd()" style="flex:1;padding:11px;border-radius:8px;border:1px dashed rgba(56,189,248,.35);background:rgba(56,189,248,.05);color:var(--ac);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">＋ 항목 추가</button>
+      <button onclick="ckbSave()" ${S.chatKB.saving?'disabled':''} style="flex:1;padding:11px;border-radius:8px;border:1px solid rgba(52,211,153,.25);background:rgba(52,211,153,.1);color:var(--gn);font-size:12px;font-weight:700;font-family:inherit;cursor:${S.chatKB.saving?'default':'pointer'};opacity:${S.chatKB.saving?'.6':'1'}">${S.chatKB.saving?'저장 중…':'💾 저장하기'}</button>
     </div>
   </div>`;
 }
