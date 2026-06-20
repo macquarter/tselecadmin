@@ -1104,6 +1104,41 @@ function ckbSet(i,field,val){if(S.chatKB.entries[i])S.chatKB.entries[i][field]=v
 function ckbAdd(){S.chatKB.entries.push({kw:'',ans:''});R()}
 function ckbRemove(i){if(!confirm('이 학습 항목을 삭제할까요?'))return;S.chatKB.entries.splice(i,1);R()}
 async function ckbSave(){S.chatKB.saving=true;R();try{await ensureToken();const raw=serializeChatKB(S.chatKB.entries);const ok=await fsPatch('siteContent/chatbot',{raw:raw});S.chatKB.saving=false;if(ok){S.chatKB.entries=parseChatKB(raw);toast('✅ 저장 완료 — 챗봇에 즉시 반영됨')}else toast('⚠️ 저장 실패 — 다시 시도해주세요')}catch(e){console.error('chatKB save error:',e);S.chatKB.saving=false;toast('❌ 저장 실패')}R()}
+function ckbGeminiKey(){
+  var k=localStorage.getItem('TSELEC_GEMINI_KEY')||'';
+  if(!k){ k=(prompt('Google AI Studio Gemini API 키를 입력하세요. 한 번 입력하면 이 브라우저에 저장됩니다.')||'').trim(); if(k) localStorage.setItem('TSELEC_GEMINI_KEY',k); }
+  return k;
+}
+function ckbSetKey(){
+  var cur=localStorage.getItem('TSELEC_GEMINI_KEY')||'';
+  var k=prompt('AI 답변 다듬기에 사용할 Gemini API 키를 입력하세요. 비워서 확인하면 삭제됩니다.', cur);
+  if(k===null) return;
+  var v=k.trim();
+  if(v){ localStorage.setItem('TSELEC_GEMINI_KEY',v); toast('API 키를 저장했습니다'); }
+  else { localStorage.removeItem('TSELEC_GEMINI_KEY'); toast('API 키를 삭제했습니다'); }
+}
+async function ckbPolish(i){
+  var e=S.chatKB.entries[i]; if(!e) return;
+  var cur=(e.ans||'').trim();
+  if(!cur){ toast('먼저 다듬을 답변 초안을 입력하세요'); return; }
+  var key=ckbGeminiKey(); if(!key){ toast('Gemini API 키가 필요합니다'); return; }
+  if(S.chatKB.polishing!=null){ return; }
+  S.chatKB.polishing=i; toast('AI가 답변을 다듬는 중입니다...');
+  try{
+    var kw=(e.kw||'').trim();
+    var sys='당신은 태승전자의 고객응대 전문 에디터입니다. 주어진 초안 답변을 고객이 신뢰할 수 있는 전문가 수준의 친절하고 명확한 존댓말 문장으로 다듬어 주세요. 없는 사실을 새로 지어내지 말고, 과장 없이 정중하게, 군더더기 없이 작성하세요. 최종 결과는 다듬어진 답변 본문만 출력하세요.';
+    var usr=['[키워드] '+kw,'[초안 답변]',cur].join(String.fromCharCode(10));
+    var body={contents:[{role:'user',parts:[{text:usr}]}],systemInstruction:{parts:[{text:sys}]},generationConfig:{temperature:0.4}};
+    var url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+key;
+    var res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var data=await res.json();
+    var parts=(((data.candidates||[])[0]||{}).content||{}).parts||[];
+    var txt=parts.map(function(p){return p.text||'';}).join('').trim();
+    if(txt){ S.chatKB.entries[i].ans=txt; toast('AI가 답변을 다듬었습니다'); }
+    else { toast('다듬기에 실패했습니다. 키 또는 네트워크를 확인하세요.'); console.error('gemini', data); }
+  }catch(err){ console.error('ckbPolish', err); toast('다듬기 중 오류가 발생했습니다'); }
+  finally{ S.chatKB.polishing=null; R(); }
+}
 function rChatLearn(){
   const EN=S.chatKB.entries;
   const cnt=EN.filter(e=>(e.kw||'').trim()||(e.ans||'').trim()).length;
@@ -1122,11 +1157,11 @@ function rChatLearn(){
         <label style="font-size:9px;font-weight:700;color:var(--ac);display:block;margin-bottom:3px">질문 키워드 (쉼표로 구분)</label>
         <input value="${(e.kw||'').replace(/"/g,'&quot;')}" oninput="ckbSet(${i},'kw',this.value)" placeholder="예: 가격, 견적, 단가, 비용" style="width:100%;padding:8px 10px;border-radius:7px;border:1px solid var(--bd);background:var(--btn-bg);color:var(--tx1);font-size:12px;font-family:inherit;margin-bottom:10px;box-sizing:border-box"/>
         <label style="font-size:9px;font-weight:700;color:var(--gn);display:block;margin-bottom:3px">답변 내용</label>
-        <textarea oninput="ckbSet(${i},'ans',this.value)" placeholder="고객에게 보여줄 답변을 입력하세요." style="width:100%;min-height:84px;padding:8px 10px;border-radius:7px;border:1px solid var(--bd);background:var(--btn-bg);color:var(--tx1);font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box">${(e.ans||'').replace(/</g,'&lt;')}</textarea>
+        <textarea oninput="ckbSet(${i},'ans',this.value)" placeholder="고객에게 보여줄 답변을 입력하세요." style="width:100%;min-height:84px;padding:8px 10px;border-radius:7px;border:1px solid var(--bd);background:var(--btn-bg);color:var(--tx1);font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box">${(e.ans||'').replace(/</g,'&lt;')}</textarea><div style="margin-top:8px"><button onclick="ckbPolish(${i})" style="padding:7px 12px;border-radius:7px;border:1px solid rgba(168,85,247,.35);background:rgba(168,85,247,.08);color:#c084fc;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer">✨ AI로 답변 다듬기</button></div>
       </div>`).join('')}
     </div>
     <div style="display:flex;gap:8px;margin-top:14px">
-      <button onclick="ckbAdd()" style="flex:1;padding:11px;border-radius:8px;border:1px dashed rgba(56,189,248,.35);background:rgba(56,189,248,.05);color:var(--ac);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">＋ 항목 추가</button>
+      <button onclick="ckbSetKey()" style="padding:11px 14px;border-radius:8px;border:1px solid rgba(168,85,247,.3);background:rgba(168,85,247,.06);color:#c084fc;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">🔑 API 키</button><button onclick="ckbAdd()" style="flex:1;padding:11px;border-radius:8px;border:1px dashed rgba(56,189,248,.35);background:rgba(56,189,248,.05);color:var(--ac);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">＋ 항목 추가</button>
       <button onclick="ckbSave()" ${S.chatKB.saving?'disabled':''} style="flex:1;padding:11px;border-radius:8px;border:1px solid rgba(52,211,153,.25);background:rgba(52,211,153,.1);color:var(--gn);font-size:12px;font-weight:700;font-family:inherit;cursor:${S.chatKB.saving?'default':'pointer'};opacity:${S.chatKB.saving?'.6':'1'}">${S.chatKB.saving?'저장 중…':'💾 저장하기'}</button>
     </div>
   </div>`;
